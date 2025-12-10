@@ -106,6 +106,57 @@ def get_team_district(team_num, year):
     print(f"ERROR : Couldn't find district for {team_num} in year {year}")
     return "no_district_found"
 
+def get_match_details(event_endpoint : str, match_type = "qm"):
+    matches_endpoint = f"{event_endpoint}/matches"
+    response = requests.get(matches_endpoint, headers=headers)
+
+    # contains a basic scoring breakdown for each match at the event
+    match_list = []
+
+    if response.status_code == 200:
+        matches = response.json()
+        for match in matches:
+            if(match['comp_level'] == match_type):
+                match_num = match['match_number']
+                red_teams = []
+                blue_teams = []
+                blue_score = match['score_breakdown'].get('blue',{}).get('totalPoints', 0)
+                red_score = match['score_breakdown'].get('red',{}).get('totalPoints', 0)
+
+                for team_id in match['alliances']['blue']['team_keys']:
+                    blue_teams.append(team_id.replace("frc", ""))
+
+                for team_id in match['alliances']['red']['team_keys']:
+                    red_teams.append(team_id.replace("frc", ""))
+
+                match_list.append([match_num, red_teams, red_score, blue_teams, blue_score])
+
+    match_list.sort(key=lambda x: x[0])
+    # print(match_list)
+    return match_list
+
+
+def get_team_name(team_num):
+    """
+    Returns the team's name
+
+    examples:
+
+    ```python
+    # prints "Beast from the East"
+    print(get_team_name(8858))
+    # prints "Robonauts"
+    print(get_team_name(118))
+    ```
+    """
+    url = f"{BASE_URL}/team/frc{team_num}"
+
+    response = requests.get(url, headers=headers)
+    team_data = response.json()
+
+    print(team_data['nickname'])
+    return team_data['nickname']
+
 def get_team_districtname(team_num, year):
     """
     Return the district code for a team in a given year
