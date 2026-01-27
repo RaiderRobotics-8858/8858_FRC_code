@@ -74,6 +74,7 @@ public class Robot extends TimedRobot {
         // and put our
         // autonomous chooser on the dashboard.
         m_robotContainer = new RobotContainer();
+        m_robotContainer.init();
 
         DataLogManager.start();
         log = DataLogManager.getLog();
@@ -138,6 +139,8 @@ public class Robot extends TimedRobot {
         odometryYLog.append(m_robotContainer.drivebase.getPose().getY());
         headingLog.append(m_robotContainer.drivebase.getHeading().getDegrees());
 
+        m_robotContainer.periodic();
+
     }
 
     /**
@@ -149,7 +152,7 @@ public class Robot extends TimedRobot {
         m_robotContainer.setMotorBrake(true);
         disabledTimer.reset();
         disabledTimer.start();
-        LEDSubsystem.getInstance().manualOverride(LEDSubsystem.Mode.SOLID_RED);
+        LEDSubsystem.getInstance().manualOverride(LEDSubsystem.Mode.BEAM_ALLIANCE);
         LEDSubsystem.getInstance().holdState();
     }
 
@@ -173,6 +176,7 @@ public class Robot extends TimedRobot {
         if (m_autonomousCommand != null) {
             m_autonomousCommand.schedule();
         }
+        LEDSubsystem.getInstance().manualOverride(LEDSubsystem.Mode.RAINBOW);
     }
 
     /**
@@ -182,8 +186,7 @@ public class Robot extends TimedRobot {
     public void autonomousPeriodic() {
     }
 
-    private Timer godzillaTimer = new Timer();
-    private boolean godzillaEnabled = false;
+    private Timer gameTimer = new Timer();
     @Override
     public void teleopInit() {
         // This makes sure that the autonomous stops running when
@@ -195,9 +198,9 @@ public class Robot extends TimedRobot {
         } else {
             CommandScheduler.getInstance().cancelAll();
         }
-        LEDSubsystem.getInstance().setMode(LEDSubsystem.default_state);
-        godzillaTimer.reset();
-        godzillaTimer.start();
+        LEDSubsystem.getInstance().manualOverride(LEDSubsystem.Mode.BEAM_ALLIANCE);
+        gameTimer.reset();
+        gameTimer.start();
     }
 
     /**
@@ -205,14 +208,10 @@ public class Robot extends TimedRobot {
      */
     @Override
     public void teleopPeriodic() {
-        if (!godzillaEnabled && godzillaTimer.get() > (2 * 60 + 15) - 20) {
-            if(DriverStation.getAlliance().isPresent() && DriverStation.getAlliance().get() == Alliance.Red){
-                LEDSubsystem.getInstance().manualOverride(LEDSubsystem.Mode.RED_GODZILLA);
-            }
-            else if(DriverStation.getAlliance().isPresent() && DriverStation.getAlliance().get() == Alliance.Blue){
-                LEDSubsystem.getInstance().manualOverride(LEDSubsystem.Mode.BLUE_GODZILLA);
-            }
-            godzillaEnabled = true;
+
+        // start a 20 second timer at the end of teleop
+        if(gameTimer.get() > 115){
+            LEDSubsystem.getInstance().startTimer(20);
         }
     }
 

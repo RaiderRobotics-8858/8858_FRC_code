@@ -5,6 +5,7 @@ import com.revrobotics.spark.SparkLowLevel.MotorType;
 
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.wpilibj.DutyCycleEncoder;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 /*
@@ -54,6 +55,10 @@ public class ClimberSubsystem extends SubsystemBase {
             output = -Math.abs(speed);
         } else {
             output = Math.abs(speed);
+        }
+
+        if (SmartDashboard.getBoolean("Student Student Driver", false)){
+            output = 0.0;
         }
 
         if(Math.abs(currentPosition - targetPosition) < 0.005){

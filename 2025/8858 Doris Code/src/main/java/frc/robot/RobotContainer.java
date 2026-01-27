@@ -12,11 +12,14 @@ import com.ctre.phoenix.led.TwinkleAnimation.TwinklePercent;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 
+import edu.wpi.first.apriltag.AprilTagFieldLayout;
+import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Filesystem;
+import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -30,22 +33,27 @@ import frc.robot.Constants.OperatorConstants;
 import frc.robot.commands.camera.SwitchCamera;
 import frc.robot.commands.climber.MoveClimber;
 import frc.robot.commands.climber.MoveClimberToPosition;
-import frc.robot.commands.elevator.MoveElevator;
+import frc.robot.commands.controller.RumbleCommand;
 import frc.robot.commands.elevator.MoveElevatorToPosition;
 import frc.robot.commands.elevator.MoveElevatorToPositionAuto;
 import frc.robot.commands.intake.AutoCoralIntake;
+import frc.robot.commands.intake.AutoScoreAlgae;
 import frc.robot.commands.intake.AutoScoreCoral;
 import frc.robot.commands.intake.algaeIntake;
 import frc.robot.commands.intake.algaeSmartIntake;
 import frc.robot.commands.intake.coralIntake;
 import frc.robot.commands.intake.preScoreAutoCoralIntake;
 import frc.robot.commands.leds.SetLEDStateCommand;
+import frc.robot.commands.vision.AutoAlign;
+import frc.robot.commands.vision.DriveToAprilTagFieldPose;
+import frc.robot.commands.vision.DriveToPositionPathPlanner;
 import frc.robot.subsystems.swervedrive.AlgaeSubsystem;
 import frc.robot.subsystems.swervedrive.CameraSubsystem;
 import frc.robot.subsystems.swervedrive.ClimberSubsystem;
 import frc.robot.subsystems.swervedrive.CoralIntakeSubsystem;
 import frc.robot.subsystems.swervedrive.ElevatorSubsystem;
 import frc.robot.subsystems.swervedrive.LEDSubsystem;
+import frc.robot.subsystems.swervedrive.LimelightSubsystem;
 import frc.robot.subsystems.swervedrive.SwerveSubsystem;
 import swervelib.SwerveInputStream;
 
@@ -62,19 +70,33 @@ public class RobotContainer {
     // Replace with CommandPS4Controller or CommandJoystick if needed
     public final CommandXboxController driverXbox = new CommandXboxController(0);
     public final CommandJoystick controller_2 = new CommandJoystick(1);
+    public final CommandJoystick safety_controller = new CommandJoystick(2);
     // The robot's subsystems and commands are defined here...
     public final SwerveSubsystem drivebase = new SwerveSubsystem(new File(Filesystem.getDeployDirectory(),
             "swerve/neo"));
 
+    public final AutoAlign autoAlign = new AutoAlign(drivebase);
+
     TwinkleAnimation twinkle_anim = new TwinkleAnimation(0, 255, 0, 0, 0.2, 38, TwinklePercent.Percent18);
+
+    public LimelightSubsystem getLimelightSubsystem() {
+        return limelightSubsystem;
+    }
 
     private final ElevatorSubsystem elevatorSubsystem = new ElevatorSubsystem();
     private final AlgaeSubsystem algaeSubsystem = new AlgaeSubsystem();
     private final CoralIntakeSubsystem coralSubsystem = new CoralIntakeSubsystem();
     private final ClimberSubsystem climberSubsystem = new ClimberSubsystem();
     private final CameraSubsystem cameraSubsystem = new CameraSubsystem();
+    private final LimelightSubsystem limelightSubsystem = new LimelightSubsystem();
     private final LEDSubsystem ledSubsystem = LEDSubsystem.getInstance();
     private int preset = 0;
+
+    double algaeTuneValue = 0.0;
+    double coralTuneValue = 0.0;
+    double driveSpeedTuner = 1.0;
+    double rotateSpeedTuner = 1.0;
+    boolean student_student_driver = false;
 
     public CANdle candle = new CANdle(OperatorConstants.CAN_dle);
 
@@ -161,9 +183,9 @@ public class RobotContainer {
         SmartDashboard.putStringArray("Auto List", AutoBuilder.getAllAutoNames().toArray(new String[0]));
         Command driveFieldOrientedDirectAngle = drivebase.driveFieldOriented(driveDirectAngle);
         SwerveInputStream normalDrive = SwerveInputStream.of(drivebase.getSwerveDrive(),
-        () -> driverXbox.getLeftY(),
-        () -> driverXbox.getLeftX())
-        .withControllerRotationAxis(() -> driverXbox.getRightX() * -0.85)
+        () -> (driveSpeedTuner * driverXbox.getLeftY()),
+        () -> (driveSpeedTuner * driverXbox.getLeftX()))
+        .withControllerRotationAxis(() -> (rotateSpeedTuner * driverXbox.getRightX()) * -0.85)
         .deadband(OperatorConstants.DEADBAND)
         .scaleTranslation(0.8)
         .allianceRelativeControl(true);
@@ -226,9 +248,9 @@ public class RobotContainer {
             controller_2.button(3).onTrue(new ParallelCommandGroup(
                     new SwitchCamera(cameraSubsystem, Constants.OperatorConstants.CAM_CORAL),
                     new SequentialCommandGroup(
-                        new MoveElevatorToPositionAuto(elevatorSubsystem, Constants.ELE_L1),
+                        new MoveElevatorToPositionAuto(elevatorSubsystem, Constants.ELE_L1 + (coralTuneValue)),
                         new ParallelCommandGroup(
-                            Commands.run(() -> elevatorSubsystem.MoveElevatorToPosition(Constants.ELE_L1))
+                            Commands.run(() -> elevatorSubsystem.MoveElevatorToPosition(Constants.ELE_L1 + (coralTuneValue)))
                             // new preScoreAutoCoralIntake(coralSubsystem)
                         )
                     )
@@ -238,9 +260,9 @@ public class RobotContainer {
             controller_2.button(4).onTrue(new ParallelCommandGroup(
                     new SwitchCamera(cameraSubsystem, Constants.OperatorConstants.CAM_CORAL),
                     new SequentialCommandGroup(
-                        new MoveElevatorToPositionAuto(elevatorSubsystem, Constants.ELE_L2),
+                        new MoveElevatorToPositionAuto(elevatorSubsystem, Constants.ELE_L2 + (coralTuneValue)),
                         new ParallelCommandGroup(
-                            Commands.run(() -> elevatorSubsystem.MoveElevatorToPosition(Constants.ELE_L2))
+                            Commands.run(() -> elevatorSubsystem.MoveElevatorToPosition(Constants.ELE_L2 + (coralTuneValue)))
                             // new preScoreAutoCoralIntake(coralSubsystem)
                         )
                     )
@@ -251,9 +273,9 @@ public class RobotContainer {
             controller_2.button(5).onTrue(new ParallelCommandGroup(
                     new SwitchCamera(cameraSubsystem, Constants.OperatorConstants.CAM_CORAL),
                     new SequentialCommandGroup(
-                        new MoveElevatorToPositionAuto(elevatorSubsystem, Constants.ELE_L3),
+                        new MoveElevatorToPositionAuto(elevatorSubsystem, Constants.ELE_L3 + (coralTuneValue)),
                         new ParallelCommandGroup(
-                            Commands.run(() -> elevatorSubsystem.MoveElevatorToPosition(Constants.ELE_L3))
+                            Commands.run(() -> elevatorSubsystem.MoveElevatorToPosition(Constants.ELE_L3 + (coralTuneValue)))
                             // new preScoreAutoCoralIntake(coralSubsystem)
                         )
                     )
@@ -265,9 +287,9 @@ public class RobotContainer {
                     new SwitchCamera(cameraSubsystem, Constants.OperatorConstants.CAM_CORAL),
                     new SequentialCommandGroup(
                         activateTwinkle,
-                        new MoveElevatorToPositionAuto(elevatorSubsystem, Constants.ELE_L4),
+                        new MoveElevatorToPositionAuto(elevatorSubsystem, Constants.ELE_L4 + (coralTuneValue)),
                         new ParallelCommandGroup(
-                            Commands.run(() -> elevatorSubsystem.MoveElevatorToPosition(Constants.ELE_L4))
+                            Commands.run(() -> elevatorSubsystem.MoveElevatorToPosition(Constants.ELE_L4 + (coralTuneValue)))
                             // new preScoreAutoCoralIntake(coralSubsystem)
                         )
                     )
@@ -276,52 +298,47 @@ public class RobotContainer {
 
             // low algae
             driverXbox.leftTrigger(0.5).onTrue(new ParallelCommandGroup(
-                    new MoveElevatorToPositionAuto(elevatorSubsystem, Constants.ELE_ALGLO),
-                    new algaeSmartIntake(algaeSubsystem)
+                    new SequentialCommandGroup(
+                        new MoveElevatorToPositionAuto(elevatorSubsystem, Constants.ELE_ALGLO + (algaeTuneValue)),
+                        new ParallelCommandGroup(
+                            Commands.run(() -> elevatorSubsystem.MoveElevatorToPosition(Constants.ELE_ALGLO + (algaeTuneValue)))
+                        )
+                    )
                 )
             );
 
             // high algae
             driverXbox.rightTrigger(0.5).onTrue(new ParallelCommandGroup(
-                    new MoveElevatorToPositionAuto(elevatorSubsystem, Constants.ELE_ALGHI),
-                    new algaeSmartIntake(algaeSubsystem)
+                new SequentialCommandGroup(
+                    new MoveElevatorToPositionAuto(elevatorSubsystem, Constants.ELE_ALGHI + (algaeTuneValue)),
+                    new ParallelCommandGroup(
+                        Commands.run(() -> elevatorSubsystem.MoveElevatorToPosition(Constants.ELE_ALGHI + (algaeTuneValue)))
+                    )
                 )
+            )
             );
 
             // move coral intake. left bumper is intake, right bumper is outtake
             driverXbox.leftBumper().onTrue(new ParallelCommandGroup(
                     new MoveElevatorToPositionAuto(elevatorSubsystem, Constants.ELE_COR_IN),
-                    new AutoCoralIntake(coralSubsystem)
+                    new SequentialCommandGroup(
+                        new AutoCoralIntake(coralSubsystem),
+                        new RumbleCommand(driverXbox, 1.0, 1.0)
+                    )
                 )
             );
-            
+
             /*
              * Algae Intake Out
              */
-            driverXbox.rightBumper().whileTrue(
-                new algaeIntake(algaeSubsystem, Constants.ALG_M_SPEED)
+            driverXbox.rightBumper().onTrue(
+                // new algaeIntake(algaeSubsystem, Constants.ALG_M_SPEED)
+                new AutoScoreAlgae(algaeSubsystem)
             );
             // move algae intake
             driverXbox.a().onTrue(
                 new algaeSmartIntake(algaeSubsystem)
             );
-
-            // CANdle controls
-            // driverXbox.a().onTrue(
-            //     Commands.runOnce(()->{
-            //         candle.setLEDs(40, 0, 0, 0, 0, 38);
-            //         // candle.animate(twinkle_anim, 0);
-            //     })
-            // );
-            // driverXbox.y().onTrue(
-            //     Commands.runOnce(()->{
-            //         candle.setLEDs(0, 0, 0, 0, 0, 38);
-            //         // candle.clearAnimation(0);
-            //     })
-            // );
-
-
-            
 
             /* Climber Up */
             // driverXbox.x().onTrue(new MoveClimberToPosition(climberSubsystem, 0.8, 0.1));
@@ -334,6 +351,66 @@ public class RobotContainer {
             );
             driverXbox.b().onFalse(
                 new MoveClimber(climberSubsystem, 0.0)
+            );
+
+            // auto-score Algae (blue)
+            driverXbox.povDown().onTrue(new SequentialCommandGroup(
+                    new SetLEDStateCommand(LEDSubsystem.Mode.BLINK_GREEN, ledSubsystem),
+                    // new MoveElevatorToPositionAuto(elevatorSubsystem, Constants.ELE_ALGHI),
+                    new algaeSmartIntake(algaeSubsystem),
+                    new MoveElevatorToPositionAuto(elevatorSubsystem, Constants.ELE_L1),
+                    new SetLEDStateCommand(LEDSubsystem.Mode.SOLID_GREEN, ledSubsystem),
+                    new RumbleCommand(driverXbox, 1.0, 1.0),
+                    new DriveToAprilTagFieldPose(drivebase, AprilTagFieldLayout.loadField(AprilTagFields.kDefaultField), 3, 0, -1, 90),
+                    new DriveToAprilTagFieldPose(drivebase, AprilTagFieldLayout.loadField(AprilTagFields.kDefaultField), 3, 0, -.7, 90),
+                    new AutoScoreAlgae(algaeSubsystem),
+                    new SetLEDStateCommand(LEDSubsystem.Mode.BLINK_ALLIANCE, ledSubsystem)
+                )
+            );
+
+            driverXbox.povLeft().onTrue(new SequentialCommandGroup(
+                    new SetLEDStateCommand(LEDSubsystem.Mode.BLINK_GREEN, ledSubsystem),
+                    new MoveElevatorToPositionAuto(elevatorSubsystem, 0),
+                    new AutoCoralIntake(coralSubsystem),
+                    new SetLEDStateCommand(LEDSubsystem.Mode.SOLID_GREEN, ledSubsystem),
+                    new RumbleCommand(driverXbox, 1.0, 1.0),
+                    // Red
+                    // new DriveToAprilTagFieldPose(drivebase, AprilTagFieldLayout.loadField(AprilTagFields.kDefaultField), 7, 2, 0.5, -90),
+                    // new DriveToAprilTagFieldPose(drivebase, AprilTagFieldLayout.loadField(AprilTagFields.kDefaultField), 7, 0.5, 0.5, -90),
+                    // Blue
+                    new DriveToAprilTagFieldPose(drivebase, AprilTagFieldLayout.loadField(AprilTagFields.kDefaultField), 18, -2.523, 0.92, 90),
+                    // new DriveToAprilTagFieldPose(drivebase, AprilTagFieldLayout.loadField(AprilTagFields.kDefaultField), 18, -0.523, 0.92, 90),
+                    new MoveElevatorToPositionAuto(elevatorSubsystem, Constants.ELE_L4),
+                    // new AutoScoreCoral(coralSubsystem),
+                    new SetLEDStateCommand(LEDSubsystem.Mode.BLINK_ALLIANCE, ledSubsystem),
+                    new MoveElevatorToPositionAuto(elevatorSubsystem, Constants.ELE_COR_IN)
+                )
+            );
+
+            driverXbox.povRight().onTrue(new SequentialCommandGroup(
+                    new SetLEDStateCommand(LEDSubsystem.Mode.BLINK_GREEN, ledSubsystem),
+                    new MoveElevatorToPositionAuto(elevatorSubsystem, 0),
+                    new AutoCoralIntake(coralSubsystem),
+                    new SetLEDStateCommand(LEDSubsystem.Mode.SOLID_GREEN, ledSubsystem),
+                    new RumbleCommand(driverXbox, 1.0, 1.0),
+                    // Red
+                    // new DriveToAprilTagFieldPose(drivebase, AprilTagFieldLayout.loadField(AprilTagFields.kDefaultField), 7, -2, 0.3, -90),
+                    // new DriveToAprilTagFieldPose(drivebase, AprilTagFieldLayout.loadField(AprilTagFields.kDefaultField), 7, -0.5, 0.2, -90),
+                    // Blue
+                    // new DriveToPositionPathPlanner(drivebase, AprilTagFieldLayout.loadField(AprilTagFields.kDefaultField), 18, -2.523, 0.52, 90),
+                    autoAlign.driveToPosition(
+                        new Pose2d(
+                            1.16,
+                            4.4,
+                            Rotation2d.fromDegrees(90)
+                        )
+                    ),
+                    // new DriveToAprilTagFieldPose(drivebase, AprilTagFieldLayout.loadField(AprilTagFields.kDefaultField), 18, -0.523, 0.22, 90),
+                    new MoveElevatorToPositionAuto(elevatorSubsystem, Constants.ELE_COR_IN),
+                    // new AutoScoreCoral(coralSubsystem),
+                    new SetLEDStateCommand(LEDSubsystem.Mode.BLINK_ALLIANCE, ledSubsystem),
+                    new MoveElevatorToPositionAuto(elevatorSubsystem, Constants.ELE_COR_IN)
+                )
             );
 
 
@@ -356,9 +433,10 @@ public class RobotContainer {
             controller_2.button(9).whileTrue(driveLeftCoral);
             controller_2.button(10).whileTrue(driveRightCoral);
             controller_2.button(1).onTrue(
-                Commands.runOnce(()->{
-                    CoralIntakeSubsystem.coral_intake_instance.coralIntake(Constants.COR_M_SPEED);
-                })
+                new AutoScoreCoral(coralSubsystem)
+                // Commands.runOnce(()->{
+                //     CoralIntakeSubsystem.coral_intake_instance.coralIntake(Constants.COR_M_SPEED);
+                // })
             );
             controller_2.button(1).onFalse(
                 Commands.runOnce(()->{
@@ -382,7 +460,7 @@ public class RobotContainer {
                     drivebase.setDefaultCommand(drivebase.driveFieldOriented(SwerveInputStream.of(drivebase.getSwerveDrive(),
                     () -> driverXbox.getLeftY(),
                     () -> driverXbox.getLeftX())
-                    .withControllerRotationAxis(() -> driverXbox.getRightX() * -0.85)
+                    .withControllerRotationAxis(() -> Math.abs(driverXbox.getRightX()) > 0.1 ? driverXbox.getRightX() * -0.85 : 0.0)
                     .scaleTranslation(0.2)
                     .robotRelative(true)));
                     cameraSubsystem.SwitchCamera(Constants.OperatorConstants.CAM_CLIMB);
@@ -398,6 +476,63 @@ public class RobotContainer {
             );
         }
 
+    }
+
+    public void periodic(){
+
+        // Get tune values from SmartDashboard
+        algaeTuneValue = SmartDashboard.getNumber("Algae Elevator Adjust", 0.0);
+        coralTuneValue = SmartDashboard.getNumber("Coral Elevator Adjust", 0.0);
+        driveSpeedTuner = SmartDashboard.getNumber("Drive Speed Adjust", 1.0);
+        rotateSpeedTuner = SmartDashboard.getNumber("Rotate Speed Adjust", 1.0);
+        student_student_driver = SmartDashboard.getBoolean("Student Student Driver", false);
+
+        if(student_student_driver){
+            driveSpeedTuner = 0.5 * driveSpeedTuner;
+            rotateSpeedTuner = 0.5 * rotateSpeedTuner;
+            if(safety_controller.button(2).getAsBoolean()){
+                SmartDashboard.putBoolean("Safety Disable", true);
+                driveSpeedTuner = 0.0;
+                rotateSpeedTuner = 0.0;
+            } else {
+                SmartDashboard.putBoolean("Safety Disable", false);
+            }
+        }
+
+        // injects the limelight pose estimation if enabled
+        if(SmartDashboard.getBoolean("Limelight Pose Estimation", true)){
+            if(DriverStation.getAlliance().get() == DriverStation.Alliance.Blue){
+                limelightSubsystem.getBotPoseBlue().ifPresent(
+                    pose -> {
+                        double ts = limelightSubsystem.getVisionTimestampSeconds();
+                        drivebase.addVisionReading(pose, ts);
+                    }
+                );
+            } else {
+                limelightSubsystem.getBotPoseRed().ifPresent(
+                    pose -> {
+                        double ts = limelightSubsystem.getVisionTimestampSeconds();
+                        drivebase.addVisionReading(pose, ts);
+                    }
+                );
+            }
+        }
+        SmartDashboard.putNumber("Position X", drivebase.getPose().getX());
+        SmartDashboard.putNumber("Position Y", drivebase.getPose().getY());
+        SmartDashboard.putNumber("Rotation", drivebase.getPose().getRotation().getDegrees());
+    }
+
+    public void init(){
+        ElevatorSubsystem.elevatorinstance.resetEncoder();
+
+        // Initialize the SmartDashboard selector
+        SmartDashboard.putBoolean("Limelight Pose Estimation", true);
+        SmartDashboard.putNumber("Algae Elevator Adjust", 0.0);
+        SmartDashboard.putNumber("Coral Elevator Adjust", 0.0);
+        SmartDashboard.putNumber("Drive Speed Adjust", 1.0);
+        SmartDashboard.putNumber("Rotate Speed Adjust", 1.0);
+        SmartDashboard.putBoolean("Student Student Driver", false);
+        SmartDashboard.putBoolean("Safety Disable", false);
     }
 
     public void setMotorBrake(boolean brake) {
