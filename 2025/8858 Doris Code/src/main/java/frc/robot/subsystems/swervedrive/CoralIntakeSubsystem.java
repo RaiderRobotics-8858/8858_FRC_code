@@ -6,6 +6,7 @@ import com.revrobotics.spark.SparkMax;
 import frc.robot.Constants;
 import frc.robot.Constants.OperatorConstants;
 import edu.wpi.first.wpilibj.DigitalInput;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class CoralIntakeSubsystem extends SubsystemBase {
@@ -24,6 +25,9 @@ public class CoralIntakeSubsystem extends SubsystemBase {
 
     /** move intake at speed */
     public void coralIntake(double speed) {
+        if(SmartDashboard.getBoolean("Safety Disable", false)){
+            speed = 0;
+        }
         coralIntakeMotor.set(speed);
     }
 
@@ -37,49 +41,43 @@ public class CoralIntakeSubsystem extends SubsystemBase {
     }
 
     public void AutoScoreCoral(){
-        if (getTop()){
-            if(getBot()){
-                coralIntakeMotor.set(Constants.COR_M_SPEED);
-            } else {
-                coralIntakeMotor.set(Constants.COR_M_SPEED);
-            }
-        } else {
-            if(getBot()){
-                coralIntakeMotor.set(Constants.COR_M_SPEED);
-            } else {
-                coralIntakeMotor.set(0);
-            }
+        if(!SmartDashboard.getBoolean("Safety Disable", false)){
+            coralIntakeMotor.set(Constants.COR_M_SPEED);
         }
     }
 
     public void AutoCoralIntake(){
-        if (getTop()){
-            if(getBot()){
-                coralIntakeMotor.set(0);
+        if(!SmartDashboard.getBoolean("Safety Disable", false)){
+            if (getTop()){
+                if(getBot()){
+                    coralIntakeMotor.set(0);
+                } else {
+                    coralIntakeMotor.set(Constants.COR_M_PRESCORE_SPEED);
+                }
             } else {
-                coralIntakeMotor.set(Constants.COR_M_PRESCORE_SPEED);
-            }
-        } else {
-            if(getBot()){
-                coralIntakeMotor.set(-Constants.COR_M_PRESCORE_SPEED);
-            } else {
-                coralIntakeMotor.set(0);
+                if(getBot()){
+                    coralIntakeMotor.set(-Constants.COR_M_PRESCORE_SPEED);
+                } else {
+                    coralIntakeMotor.set(0);
+                }
             }
         }
     }
 
     public void preScoreAutoCoralIntake(){
-        if (getTop()){
-            if(getBot()){
-                coralIntakeMotor.set(Constants.COR_M_PRESCORE_SPEED);
+        if(!SmartDashboard.getBoolean("Safety Disable", false)){
+            if (getTop()){
+                if(getBot()){
+                    coralIntakeMotor.set(Constants.COR_M_PRESCORE_SPEED);
+                } else {
+                    coralIntakeMotor.set(Constants.COR_M_PRESCORE_SPEED);
+                }
             } else {
-                coralIntakeMotor.set(Constants.COR_M_PRESCORE_SPEED);
-            }
-        } else {
-            if(getBot()){
-                coralIntakeMotor.set(0);
-            } else {
-                coralIntakeMotor.set(0);
+                if(getBot()){
+                    coralIntakeMotor.set(0);
+                } else {
+                    coralIntakeMotor.set(0);
+                }
             }
         }
     }

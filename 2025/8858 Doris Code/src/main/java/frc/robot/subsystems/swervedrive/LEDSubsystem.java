@@ -2,8 +2,15 @@ package frc.robot.subsystems.swervedrive;
 
 import com.ctre.phoenix.led.CANdle;
 import com.ctre.phoenix.led.TwinkleAnimation;
+import com.ctre.phoenix.led.CANdle.LEDStripType;
+import com.ctre.phoenix.led.LarsonAnimation.BounceMode;
 import com.ctre.phoenix.led.TwinkleAnimation.TwinklePercent;
+import com.ctre.phoenix.led.LarsonAnimation;
+import com.ctre.phoenix.led.RainbowAnimation;
+import com.ctre.phoenix.led.Animation;
 
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.util.Color;
@@ -13,29 +20,47 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 public class LEDSubsystem extends SubsystemBase {
     private static LEDSubsystem m_instance = null;
     private CANdle candle = null;
-    private static final int LED_COUNT = 38;
+    private static final int LED_COUNT = 38; // was 38
     private Timer m_timer = null;
     private Mode mode = null;
-    public static final Mode default_state = Mode.BLINK_GREEN;
+    private boolean countDownTimerActive = false;
+    private int countDownTimerLength = 0;
+    private Timer m_countDownTimer;
+    public static final Mode default_state = Mode.BEAM_ALLIANCE;
     private static final TwinkleAnimation blue_twinkle_anim = new TwinkleAnimation(0, 255, 0, 0, 0.2, LED_COUNT,
             TwinklePercent.Percent18);
 
+    private static final LarsonAnimation blueBeam = new LarsonAnimation(0, 0, 255, 0, 0.5, LED_COUNT, BounceMode.Center, 5);
+    private static final LarsonAnimation redBeam = new LarsonAnimation(255, 0, 0, 0, 0.5, LED_COUNT, BounceMode.Center, 5);
+    private static final LarsonAnimation purpleBeam = new LarsonAnimation(255, 0, 255, 0, 0.5, LED_COUNT, BounceMode.Center, 5);
+    private static final RainbowAnimation rainbow = new RainbowAnimation(255, 0.25, LED_COUNT);
+
     public static enum Mode {
         OFF,
+        RAINBOW,
+        SOLID_ALLIANCE,
         SOLID_RED,
-        SOLID_GREEN,
         SOLID_BLUE,
+        SOLID_GREEN,
+        SOLID_PURPLE,
         RED_GODZILLA,
         BLUE_GODZILLA,
+        BLINK_ALLIANCE,
         BLINK_RED,
         BLINK_BLUE,
         BLINK_GREEN,
+        BLINK_PURPLE,
         TWINKLE_BLUE,
+        BEAM_ALLIANCE,
+        BEAM_BLUE,
+        BEAM_RED
     }
 
     private LEDSubsystem() {
         candle = new CANdle(17);
+        candle.configLEDType(LEDStripType.BRG);
         m_timer = new Timer();
+        m_countDownTimer = new Timer();
         setMode(default_state);
         m_instance = this;
         setDefaultCommand(new Command() {
@@ -50,6 +75,12 @@ public class LEDSubsystem extends SubsystemBase {
         });
     }
 
+    public void startTimer(int t_seconds){
+        countDownTimerActive = true;
+        countDownTimerLength = t_seconds;
+        m_countDownTimer.start();
+    }
+
     public static LEDSubsystem getInstance() {
         if (m_instance == null) {
             m_instance = new LEDSubsystem();
@@ -60,37 +91,93 @@ public class LEDSubsystem extends SubsystemBase {
     public void holdState() {
         double time = m_timer.get();
         SmartDashboard.putNumber("LED Animation Timer", time);
-        switch (mode) {
-            case OFF:
-                setColor(0, 0, 0);
-                break;
-            case SOLID_RED:
-                setColor(255, 0, 0);
-                break;
-            case SOLID_GREEN:
-                setColor(0, 255, 0);
-                break;
-            case SOLID_BLUE:
-                setColor(0, 0, 255);
-                break;
-            case RED_GODZILLA:
-                runGodzilla(time, 255, 0, 0);
-                break;
-            case BLUE_GODZILLA:
-                runGodzilla(time, 0, 0, 255);
-                break;
-            case BLINK_RED:
-                blink(1, time, 255, 0, 0);
-                break;
-            case BLINK_GREEN:
-                blink(1, time, 0, 255, 0);
-                break;
-            case BLINK_BLUE:
-                blink(1, time, 0, 0, 255);
-                break;
-            case TWINKLE_BLUE:
-                candle.animate(blue_twinkle_anim);
-                break;
+        if(countDownTimerActive){
+            double time_remaining = countDownTimerLength - m_countDownTimer.get();
+
+            if(time_remaining > 0){
+                candle.setLEDs(255, 255, 255, 255, (int)(LED_COUNT * (time_remaining / countDownTimerLength)), LED_COUNT);
+                candle.setLEDs(255, 255, 255, 255, (int)(LED_COUNT * (time_remaining / countDownTimerLength)), LED_COUNT);
+            } else {
+                countDownTimerActive = false;
+                countDownTimerLength = 0;
+                m_countDownTimer.stop();
+                m_countDownTimer.reset();
+            }
+        } else {
+            switch (mode) {
+                case OFF:
+                    setColor(0, 0, 0);
+                    break;
+                case RAINBOW:
+                    candle.animate(rainbow);
+                    break;
+                case SOLID_ALLIANCE:
+                    if(DriverStation.getAlliance().get() == Alliance.Red){
+                        setColor(255, 0, 0);
+                    } else if (DriverStation.getAlliance().get() == Alliance.Blue){
+                        setColor(0, 255, 0);
+                    } else {
+                        setColor(255, 2555, 255);
+                    }
+                    break;
+                case SOLID_RED:
+                    setColor(255, 0, 0);
+                    break;
+                case SOLID_BLUE:
+                    setColor(0, 0, 255);
+                    break;
+                case SOLID_GREEN:
+                    setColor(0, 255, 0);
+                    break;
+                case SOLID_PURPLE:
+                    setColor(255, 0, 255);
+                    break;
+                case RED_GODZILLA:
+                    runGodzilla(time, 255, 0, 0);
+                    break;
+                case BLUE_GODZILLA:
+                    runGodzilla(time, 0, 0, 255);
+                    break;
+                case BLINK_ALLIANCE:
+                    if(DriverStation.getAlliance().get() == Alliance.Red){
+                        blink(1, time, 255, 0, 0);
+                    } else if (DriverStation.getAlliance().get() == Alliance.Blue){
+                        blink(1, time, 0, 0, 255);
+                    } else {
+                        blink(1, time, 255, 255, 255);
+                    }
+                    break;
+                case BLINK_RED:
+                    blink(1, time, 255, 0, 0);
+                    break;
+                case BLINK_BLUE:
+                    blink(1, time, 0, 0, 255);
+                    break;
+                case BLINK_GREEN:
+                    blink(1, time, 0, 255, 0);
+                    break;
+                case BLINK_PURPLE:
+                    blink(1, time, 255, 0, 255);
+                    break;
+                case TWINKLE_BLUE:
+                    candle.animate(blue_twinkle_anim);
+                    break;
+                case BEAM_ALLIANCE:
+                    if(DriverStation.getAlliance().get() == Alliance.Red){
+                        candle.animate(redBeam);
+                    } else if (DriverStation.getAlliance().get() == Alliance.Blue){
+                        candle.animate(blueBeam);
+                    } else {
+                        candle.animate(purpleBeam);
+                    }
+                    break;
+                case BEAM_BLUE:
+                    candle.animate(blueBeam);
+                    break;
+                case BEAM_RED:
+                    candle.animate(redBeam);
+                    break;
+            }
         }
     }
 
@@ -127,14 +214,27 @@ public class LEDSubsystem extends SubsystemBase {
         if (time % rate < (rate / 2)) {
             setColor(r, g, b);
         } else {
-            setColor(0, 0, 0);
+            if(countDownTimerActive){
+                double time_remaining = countDownTimerLength - m_countDownTimer.get();
+    
+                if(time_remaining > 0){
+                    candle.setLEDs(r, g, b, 255, (int)(LED_COUNT * (time_remaining / countDownTimerLength)), LED_COUNT);
+                } else {
+                    countDownTimerActive = false;
+                    countDownTimerLength = 0;
+                    m_countDownTimer.stop();
+                    m_countDownTimer.reset();
+                }
+            } else {
+                setColor(0, 0, 0);
+            }
         }
     }
 
     private void setColor(int r, int g, int b) {
         Color col = new Color(r, g, b);
         SmartDashboard.putString("LED Color", col.toHexString());
-        candle.setLEDs(r, b, g, 0, 0, LED_COUNT);
+        candle.setLEDs(r, g, b, 0, 0, LED_COUNT);
     }
 
     private double last_blink = 0;

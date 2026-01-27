@@ -27,13 +27,19 @@ public final class Constants {
     public static final double LOOP_TIME = 0.13; // s, 20ms + 110ms sprk max velocity lag
     public static final double MAX_SPEED = Units.feetToMeters(14.5);
 
+    // Path Constraints
+    public static final double MAX_DRIVE_VELO = 1.0;
+    public static final double MAX_DRIVE_ACCEL = 1.0;
+    public static final double MAX_ANGLE_VELO = Units.degreesToRadians(90);
+    public static final double MAX_ANGLE_ACCEL = Units.degreesToRadians(360);
+
     // Positions for coral elevator height for levels 1-4
     public static final double ELE_L1 = (0.0);
-    public static final double ELE_L2 = (15.024);
-    public static final double ELE_L3 = (36.142);
-    public static final double ELE_L4 = (69.15);
-    public static final double ELE_ALGLO = (33.0);
-    public static final double ELE_ALGHI = (55.5);
+    public static final double ELE_L2 = (20.205);
+    public static final double ELE_L3 = (48.607);
+    public static final double ELE_L4 = (93.0);
+    public static final double ELE_ALGLO = (44.381);
+    public static final double ELE_ALGHI = (74.64);
     public static final double ELE_TOL = (0.35);
 
     // Positions for coral wrist angle for levels 1-4
@@ -55,6 +61,16 @@ public final class Constants {
 
     // Climber speed stuff
     public static final double CL_M_SPEED = (0.1);
+
+    // PID coefficients for driving (taken from pidfproperties.json)
+    public static final double DRIVE_KP = 0.00023;
+    public static final double DRIVE_KI = 0.0000015;
+    public static final double DRIVE_KD = 1;
+
+    // PID coefficients for turning (taken from pidfproperties.json)
+    public static double ANGLE_KP = 0.01;
+    public static double ANGLE_KI = 0.000038975;
+    public static double ANGLE_KD = 1;
 
     // Maximum speed of the robot in meters per second, used to limit acceleration.
 

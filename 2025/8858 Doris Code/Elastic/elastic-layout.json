@@ -1,0 +1,518 @@
+{
+  "version": 1.0,
+  "grid_size": 90,
+  "tabs": [
+    {
+      "name": "Teleoperated",
+      "grid_layout": {
+        "layouts": [],
+        "containers": [
+          {
+            "title": "Climb Camera",
+            "x": 0.0,
+            "y": 0.0,
+            "width": 450.0,
+            "height": 360.0,
+            "type": "Camera Stream",
+            "properties": {
+              "topic": "/CameraPublisher/USB Camera 1",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "z_Climber Encoder",
+            "x": 1350.0,
+            "y": 450.0,
+            "width": 180.0,
+            "height": 180.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/z_Climber Encoder",
+              "period": 0.06,
+              "data_type": "double",
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Robot X Position",
+            "x": 1170.0,
+            "y": 450.0,
+            "width": 180.0,
+            "height": 180.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Robot X Position",
+              "period": 0.06,
+              "data_type": "double",
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Robot Y Position",
+            "x": 1170.0,
+            "y": 270.0,
+            "width": 180.0,
+            "height": 180.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Robot Y Position",
+              "period": 0.06,
+              "data_type": "double",
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Rotation",
+            "x": 1350.0,
+            "y": 270.0,
+            "width": 180.0,
+            "height": 180.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Rotation",
+              "period": 0.06,
+              "data_type": "double",
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "limelight",
+            "x": 1170.0,
+            "y": 0.0,
+            "width": 360.0,
+            "height": 270.0,
+            "type": "Camera Stream",
+            "properties": {
+              "topic": "/CameraPublisher/limelight",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Limelight Pose Estimation",
+            "x": 450.0,
+            "y": 540.0,
+            "width": 180.0,
+            "height": 180.0,
+            "type": "Toggle Switch",
+            "properties": {
+              "topic": "/SmartDashboard/Limelight Pose Estimation",
+              "period": 0.06,
+              "data_type": "boolean"
+            }
+          },
+          {
+            "title": "Algae Elevator Adjust",
+            "x": 810.0,
+            "y": 0.0,
+            "width": 360.0,
+            "height": 180.0,
+            "type": "Number Slider",
+            "properties": {
+              "topic": "/SmartDashboard/Algae Elevator Adjust",
+              "period": 0.06,
+              "data_type": "double",
+              "min_value": -5.0,
+              "max_value": 5.0,
+              "divisions": 6,
+              "update_continuously": true
+            }
+          },
+          {
+            "title": "Coral Elevator Adjust",
+            "x": 810.0,
+            "y": 180.0,
+            "width": 360.0,
+            "height": 180.0,
+            "type": "Number Slider",
+            "properties": {
+              "topic": "/SmartDashboard/Coral Elevator Adjust",
+              "period": 0.06,
+              "data_type": "double",
+              "min_value": -5.0,
+              "max_value": 5.0,
+              "divisions": 6,
+              "update_continuously": true
+            }
+          },
+          {
+            "title": "Drive Speed Adjust",
+            "x": 630.0,
+            "y": 360.0,
+            "width": 540.0,
+            "height": 180.0,
+            "type": "Number Slider",
+            "properties": {
+              "topic": "/SmartDashboard/Drive Speed Adjust",
+              "period": 0.06,
+              "data_type": "double",
+              "min_value": 0.0,
+              "max_value": 1.0,
+              "divisions": 5,
+              "update_continuously": true
+            }
+          },
+          {
+            "title": "Rotate Speed Adjust",
+            "x": 630.0,
+            "y": 540.0,
+            "width": 540.0,
+            "height": 180.0,
+            "type": "Number Slider",
+            "properties": {
+              "topic": "/SmartDashboard/Rotate Speed Adjust",
+              "period": 0.06,
+              "data_type": "double",
+              "min_value": 0.0,
+              "max_value": 1.0,
+              "divisions": 5,
+              "update_continuously": true
+            }
+          },
+          {
+            "title": "Coral Camera",
+            "x": 450.0,
+            "y": 0.0,
+            "width": 360.0,
+            "height": 360.0,
+            "type": "Camera Stream",
+            "properties": {
+              "topic": "/CameraPublisher/USB Camera 0",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Student Student Driver",
+            "x": 450.0,
+            "y": 360.0,
+            "width": 180.0,
+            "height": 180.0,
+            "type": "Toggle Switch",
+            "properties": {
+              "topic": "/SmartDashboard/Student Student Driver",
+              "period": 0.06,
+              "data_type": "boolean"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Student Student Driver",
+      "grid_layout": {
+        "layouts": [],
+        "containers": [
+          {
+            "title": "Coral Camera",
+            "x": 360.0,
+            "y": 0.0,
+            "width": 900.0,
+            "height": 720.0,
+            "type": "Camera Stream",
+            "properties": {
+              "topic": "/CameraPublisher/USB Camera 0",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Safe to Drive",
+            "x": 1260.0,
+            "y": 0.0,
+            "width": 270.0,
+            "height": 720.0,
+            "type": "Boolean Box",
+            "properties": {
+              "topic": "/SmartDashboard/Safety Disable",
+              "period": 0.06,
+              "data_type": "boolean",
+              "true_color": 4292739076,
+              "false_color": 4283215696,
+              "true_icon": "None",
+              "false_icon": "None"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Elevator",
+      "grid_layout": {
+        "layouts": [],
+        "containers": [
+          {
+            "title": "Elevator Target Position",
+            "x": 0.0,
+            "y": 0.0,
+            "width": 720.0,
+            "height": 180.0,
+            "type": "Number Bar",
+            "properties": {
+              "topic": "/SmartDashboard/Elevator Target Position",
+              "period": 0.033,
+              "data_type": "double",
+              "min_value": 0.0,
+              "max_value": 93.0,
+              "divisions": 5,
+              "inverted": false,
+              "orientation": "horizontal"
+            }
+          },
+          {
+            "title": "Elevator Power",
+            "x": 720.0,
+            "y": 360.0,
+            "width": 810.0,
+            "height": 360.0,
+            "type": "Graph",
+            "properties": {
+              "topic": "/SmartDashboard/Elevator Power",
+              "period": 0.033,
+              "data_type": "double",
+              "time_displayed": 5.0,
+              "color": 4278238420,
+              "line_width": 2.0
+            }
+          },
+          {
+            "title": "Elevator Is At Position",
+            "x": 720.0,
+            "y": 180.0,
+            "width": 180.0,
+            "height": 180.0,
+            "type": "Boolean Box",
+            "properties": {
+              "topic": "/SmartDashboard/Elevator Is At Position",
+              "period": 0.06,
+              "data_type": "boolean",
+              "true_color": 4283215696,
+              "false_color": 4294198070,
+              "true_icon": "None",
+              "false_icon": "None"
+            }
+          },
+          {
+            "title": "Elevator Velocity",
+            "x": 1170.0,
+            "y": 0.0,
+            "width": 270.0,
+            "height": 360.0,
+            "type": "Graph",
+            "properties": {
+              "topic": "/SmartDashboard/Elevator Velocity",
+              "period": 0.033,
+              "data_type": "double",
+              "time_displayed": 5.0,
+              "color": 4278238420,
+              "line_width": 2.0
+            }
+          },
+          {
+            "title": "Elevator Current (A)",
+            "x": 900.0,
+            "y": 0.0,
+            "width": 270.0,
+            "height": 360.0,
+            "type": "Graph",
+            "properties": {
+              "topic": "/SmartDashboard/Elevator Current (A)",
+              "period": 0.033,
+              "data_type": "double",
+              "time_displayed": 5.0,
+              "color": 4278238420,
+              "line_width": 2.0
+            }
+          },
+          {
+            "title": "Elevator Quadrature Encoder",
+            "x": 0.0,
+            "y": 180.0,
+            "width": 720.0,
+            "height": 180.0,
+            "type": "Number Bar",
+            "properties": {
+              "topic": "/SmartDashboard/Elevator Quadrature Encoder",
+              "period": 0.06,
+              "data_type": "double",
+              "min_value": 0.0,
+              "max_value": 93.0,
+              "divisions": 5,
+              "inverted": false,
+              "orientation": "horizontal"
+            }
+          },
+          {
+            "title": "elevator command",
+            "x": 720.0,
+            "y": 0.0,
+            "width": 180.0,
+            "height": 180.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/elevator command",
+              "period": 0.06,
+              "data_type": "string",
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Coral Elevator Adjust",
+            "x": 0.0,
+            "y": 360.0,
+            "width": 720.0,
+            "height": 180.0,
+            "type": "Number Slider",
+            "properties": {
+              "topic": "/SmartDashboard/Coral Elevator Adjust",
+              "period": 0.06,
+              "data_type": "double",
+              "min_value": -5.0,
+              "max_value": 5.0,
+              "divisions": 11,
+              "update_continuously": true
+            }
+          },
+          {
+            "title": "Algae Elevator Adjust",
+            "x": 0.0,
+            "y": 540.0,
+            "width": 720.0,
+            "height": 180.0,
+            "type": "Number Slider",
+            "properties": {
+              "topic": "/SmartDashboard/Algae Elevator Adjust",
+              "period": 0.06,
+              "data_type": "double",
+              "min_value": -5.0,
+              "max_value": 5.0,
+              "divisions": 11,
+              "update_continuously": true
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Intakes",
+      "grid_layout": {
+        "layouts": [],
+        "containers": [
+          {
+            "title": "Algae Intake Current (A)",
+            "x": 0.0,
+            "y": 0.0,
+            "width": 810.0,
+            "height": 360.0,
+            "type": "Graph",
+            "properties": {
+              "topic": "/SmartDashboard/Algae Intake Current (A)",
+              "period": 0.033,
+              "data_type": "double",
+              "time_displayed": 5.0,
+              "color": 4278238420,
+              "line_width": 2.0
+            }
+          },
+          {
+            "title": "Algae Blind Run Timer",
+            "x": 810.0,
+            "y": 0.0,
+            "width": 180.0,
+            "height": 180.0,
+            "type": "Match Time",
+            "properties": {
+              "topic": "/SmartDashboard/Algae Blind Run Timer",
+              "period": 0.06,
+              "data_type": "double",
+              "time_display_mode": "Minutes and Seconds",
+              "red_start_time": 15,
+              "yellow_start_time": 30
+            }
+          },
+          {
+            "title": "Algae Intake Done",
+            "x": 810.0,
+            "y": 180.0,
+            "width": 180.0,
+            "height": 180.0,
+            "type": "Boolean Box",
+            "properties": {
+              "topic": "/SmartDashboard/Algae Intake Done",
+              "period": 0.06,
+              "data_type": "boolean",
+              "true_color": 4283215696,
+              "false_color": 4294198070,
+              "true_icon": "None",
+              "false_icon": "None"
+            }
+          },
+          {
+            "title": "Coral bottom switch",
+            "x": 1080.0,
+            "y": 180.0,
+            "width": 180.0,
+            "height": 180.0,
+            "type": "Boolean Box",
+            "properties": {
+              "topic": "/SmartDashboard/z_Limit Switch Bottom",
+              "period": 0.06,
+              "data_type": "boolean",
+              "true_color": 4283215696,
+              "false_color": 4294198070,
+              "true_icon": "Checkmark",
+              "false_icon": "X"
+            }
+          },
+          {
+            "title": "Coral top switch",
+            "x": 1080.0,
+            "y": 0.0,
+            "width": 180.0,
+            "height": 180.0,
+            "type": "Boolean Box",
+            "properties": {
+              "topic": "/SmartDashboard/z_Limit Switch Top",
+              "period": 0.06,
+              "data_type": "boolean",
+              "true_color": 4283215696,
+              "false_color": 4294198070,
+              "true_icon": "Checkmark",
+              "false_icon": "X"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Limelight",
+      "grid_layout": {
+        "layouts": [],
+        "containers": [
+          {
+            "title": "Limelight Pose Estimation",
+            "x": 0.0,
+            "y": 0.0,
+            "width": 180.0,
+            "height": 180.0,
+            "type": "Toggle Switch",
+            "properties": {
+              "topic": "/SmartDashboard/Limelight Pose Estimation",
+              "period": 0.06,
+              "data_type": "boolean"
+            }
+          },
+          {
+            "title": "limelight",
+            "x": 360.0,
+            "y": 0.0,
+            "width": 900.0,
+            "height": 720.0,
+            "type": "Camera Stream",
+            "properties": {
+              "topic": "/CameraPublisher/limelight",
+              "period": 0.06
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
