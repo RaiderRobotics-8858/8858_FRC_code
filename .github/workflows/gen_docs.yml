@@ -1,0 +1,33 @@
+name: Generate documentation pdf
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '2026/8858_Echidna_Code/docs/**'
+  workflow_dispatch:
+
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python version
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+
+      - name: Run Python script
+        run: cd 2026/8858_Echidna_Code/docs && pip install -r requirements.txt && chmod +x ./gen_spec.sh && ./gen_spec.sh
+
+      - name: GitHub Release
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "**/Echidna_Spec.pdf"
+          tag: latest
+          prerelease: false
+          allowUpdates: true
