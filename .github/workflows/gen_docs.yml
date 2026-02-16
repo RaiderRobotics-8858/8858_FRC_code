@@ -1,4 +1,4 @@
-name: Generate Echidna documentation pdf
+name: Generate Echidna Specification PDF
 on:
   push:
     branches:
@@ -33,7 +33,7 @@ jobs:
             inkscape \
             librsvg2-bin
 
-      - name: Run Echidna pandoc documentation script
+      - name: Run Echidna specification generation script
         run: cd 2026/8858_Echidna_Code/docs && pwsh -File ./docs_gen.ps1
 
       - name: GitHub Release
