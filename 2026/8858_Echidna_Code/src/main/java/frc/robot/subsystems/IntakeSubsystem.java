@@ -14,7 +14,9 @@ import static edu.wpi.first.units.Units.Second;
 import static edu.wpi.first.units.Units.Seconds;
 import static edu.wpi.first.units.Units.Volts;
 
-import com.ctre.phoenix6.hardware.TalonFX;
+
+import com.revrobotics.spark.SparkMax;
+
 import edu.wpi.first.math.controller.ArmFeedforward;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.Angle;
@@ -23,6 +25,8 @@ import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Constants;
+
 import org.littletonrobotics.junction.AutoLog;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
@@ -35,9 +39,9 @@ import yams.motorcontrollers.SmartMotorControllerConfig;
 import yams.motorcontrollers.SmartMotorControllerConfig.ControlMode;
 import yams.motorcontrollers.SmartMotorControllerConfig.MotorMode;
 import yams.motorcontrollers.SmartMotorControllerConfig.TelemetryVerbosity;
-import yams.motorcontrollers.remote.TalonFXWrapper;
+import yams.motorcontrollers.local.SparkWrapper;
 
-public class ArmSubsystem extends SubsystemBase {
+public class IntakeSubsystem extends SubsystemBase {
 
   public class ArmConstants {
 
@@ -78,7 +82,7 @@ public class ArmSubsystem extends SubsystemBase {
 
   private final ArmInputsAutoLogged armInputs = new ArmInputsAutoLogged();
 
-  private final TalonFX armMotor = new TalonFX(ArmConstants.MOTOR_ID);
+  private final SparkMax armMotor = new SparkMax(Constants.CAN_INTAKE_EXT, com.revrobotics.spark.SparkLowLevel.MotorType.kBrushless);
 
   ///
   /// YAMS Configurations
@@ -110,7 +114,7 @@ public class ArmSubsystem extends SubsystemBase {
 
       .withStatorCurrentLimit(Amps.of(ArmConstants.STATOR_CURRENT_LIMIT));
 
-  private SmartMotorController armSMC = new TalonFXWrapper(armMotor, DCMotor.getFalcon500(1), smcConfig);
+  private SmartMotorController armSMC = new SparkWrapper(armMotor, DCMotor.getNEO(1), smcConfig);
 
   private ArmConfig armCfg = new ArmConfig(armSMC)
       .withHardLimit(Degrees.of(-25), Degrees.of(141))

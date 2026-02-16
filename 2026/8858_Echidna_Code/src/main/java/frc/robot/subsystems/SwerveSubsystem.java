@@ -11,10 +11,19 @@ import static edu.wpi.first.units.Units.Radians;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static edu.wpi.first.units.Units.Second;
 
+import java.util.function.DoubleSupplier;
+import java.util.function.Supplier;
+
+import org.littletonrobotics.junction.AutoLog;
+import org.littletonrobotics.junction.Logger;
+
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.Pigeon2;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
+import com.studica.frc.AHRS;
+import com.studica.frc.AHRS.NavXComType;
 import com.revrobotics.spark.SparkMax;
+
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -31,10 +40,7 @@ import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import java.util.function.DoubleSupplier;
-import java.util.function.Supplier;
-import org.littletonrobotics.junction.AutoLog;
-import org.littletonrobotics.junction.Logger;
+import frc.robot.Constants;
 import yams.gearing.GearBox;
 import yams.gearing.MechanismGearing;
 import yams.mechanisms.config.SwerveDriveConfig;
@@ -78,16 +84,18 @@ public class SwerveSubsystem extends SubsystemBase
   public SwerveModule createModule(SparkMax drive, SparkMax azimuth, CANcoder absoluteEncoder, String moduleName,
                                    Translation2d location)
   {
-    MechanismGearing driveGearing   = new MechanismGearing(GearBox.fromStages("12:1", "2:1"));
+    // MechanismGearing driveGearing   = new MechanismGearing(GearBox.fromStages("12:1", "2:1"));
+    MechanismGearing driveGearing   = new MechanismGearing(GearBox.fromStages("6.75:1"));
+    // MechanismGearing driveGearing   = new MechanismGearing(GearBox.fromStages("14:50", "27:17", "15:45"));
     MechanismGearing azimuthGearing = new MechanismGearing(GearBox.fromStages("21:1"));
     SmartMotorControllerConfig driveCfg = new SmartMotorControllerConfig(this)
         .withWheelDiameter(Inches.of(4))
-        .withClosedLoopController(50, 0, 4)
+        .withClosedLoopController(0.05, 0, 0.1)
         .withGearing(driveGearing)
         .withStatorCurrentLimit(Amps.of(40))
         .withTelemetry("driveMotor", SmartMotorControllerConfig.TelemetryVerbosity.HIGH);
     SmartMotorControllerConfig azimuthCfg = new SmartMotorControllerConfig(this)
-        .withClosedLoopController(50, 0, 4)
+        .withClosedLoopController(0.9, 0, 0.2)
         .withContinuousWrapping(Radians.of(-Math.PI), Radians.of(Math.PI))
         .withGearing(azimuthGearing)
         .withStatorCurrentLimit(Amps.of(20))
@@ -147,29 +155,30 @@ public class SwerveSubsystem extends SubsystemBase
 
   public SwerveSubsystem()
   {
-    Pigeon2 gyro = new Pigeon2(14);
-    gyroAngleSupplier = gyro.getYaw().asSupplier();
+    AHRS gyro = new AHRS(NavXComType.kMXP_SPI);
+    // studica AHRS.getYaw() returns a double (degrees). Wrap it as an Angle supplier.
+    gyroAngleSupplier = () -> Degrees.of(gyro.getYaw());
 
-    var fl = createModule(new SparkMax(1, MotorType.kBrushless),
-                          new SparkMax(2, MotorType.kBrushless),
-                          new CANcoder(3),
+    var fl = createModule(new SparkMax(Constants.CAN_FL_DRIVE, MotorType.kBrushless),
+                          new SparkMax(Constants.CAN_FL_ANGLE, MotorType.kBrushless),
+                          new CANcoder(Constants.CAN_FL_ENC),
                           "frontleft",
-                          new Translation2d(Inches.of(24), Inches.of(24)));
-    var fr = createModule(new SparkMax(4, MotorType.kBrushless),
-                          new SparkMax(5, MotorType.kBrushless),
-                          new CANcoder(6),
+                          new Translation2d(Inches.of(Constants.ROBOT_LENGTH/2), Inches.of(Constants.ROBOT_WIDTH/2)));
+    var fr = createModule(new SparkMax(Constants.CAN_FR_DRIVE, MotorType.kBrushless),
+                          new SparkMax(Constants.CAN_FR_ANGLE, MotorType.kBrushless),
+                          new CANcoder(Constants.CAN_FR_ENC),
                           "frontright",
-                          new Translation2d(Inches.of(24), Inches.of(-24)));
-    var bl = createModule(new SparkMax(7, MotorType.kBrushless),
-                          new SparkMax(8, MotorType.kBrushless),
-                          new CANcoder(9),
+                          new Translation2d(Inches.of(Constants.ROBOT_LENGTH/2), Inches.of(-Constants.ROBOT_WIDTH/2)));
+    var bl = createModule(new SparkMax(Constants.CAN_BL_DRIVE, MotorType.kBrushless),
+                          new SparkMax(Constants.CAN_BL_ANGLE, MotorType.kBrushless),
+                          new CANcoder(Constants.CAN_BL_ENC),
                           "backleft",
-                          new Translation2d(Inches.of(-24), Inches.of(24)));
-    var br = createModule(new SparkMax(10, MotorType.kBrushless),
-                          new SparkMax(11, MotorType.kBrushless),
-                          new CANcoder(12),
+                          new Translation2d(Inches.of(-Constants.ROBOT_LENGTH/2), Inches.of(Constants.ROBOT_WIDTH/2)));
+    var br = createModule(new SparkMax(Constants.CAN_BR_DRIVE, MotorType.kBrushless),
+                          new SparkMax(Constants.CAN_BR_ANGLE, MotorType.kBrushless),
+                          new CANcoder(Constants.CAN_BR_ENC),
                           "backright",
-                          new Translation2d(Inches.of(-24), Inches.of(-24)));
+                          new Translation2d(Inches.of(-Constants.ROBOT_LENGTH/2), Inches.of(-Constants.ROBOT_WIDTH/2)));
     config = new SwerveDriveConfig(this, fl, fr, bl, br)
         .withGyro(() -> getGyroAngle().getMeasure())
         .withStartingPose(swerveInputs.estimatedPose)
