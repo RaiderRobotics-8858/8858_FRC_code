@@ -1,4 +1,4 @@
-name: Generate documentation pdf
+name: Generate Echidna documentation pdf
 on:
   push:
     branches:
@@ -16,13 +16,25 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Python version
-        uses: actions/setup-python@v6
+      - name: Setup Pandoc
+        uses: r-lib/actions/setup-pandoc@v2
         with:
-          python-version: '3.13'
+          pandoc-version: '3.1.11'
 
-      - name: Run Python script
-        run: cd 2026/8858_Echidna_Code/docs && pip install -r requirements.txt && chmod +x ./gen_spec.sh && ./gen_spec.sh
+      - name: Install LaTeX
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            texlive-latex-recommended \
+            texlive-latex-extra \
+            texlive-fonts-recommended \
+            texlive-fonts-extra \
+            texlive-xetex \
+            inkscape \
+            librsvg2-bin
+
+      - name: Run Echidna pandoc documentation script
+        run: cd 2026/8858_Echidna_Code/docs && pwsh -File ./docs_gen.ps1
 
       - name: GitHub Release
         uses: ncipollo/release-action@v1

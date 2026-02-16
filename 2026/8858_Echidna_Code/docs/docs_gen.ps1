@@ -14,7 +14,7 @@ $inputFiles = @(
     "subsystem_led.md" # LED
 )
 
-$outputFile = "Echidna_Pandoc_Spec.pdf"
+$outputFile = "Echidna_Spec.pdf"
 $tempDir = ".pandoc_tmp"
 
 # Want table captions to render as above the tables in the markdown,
