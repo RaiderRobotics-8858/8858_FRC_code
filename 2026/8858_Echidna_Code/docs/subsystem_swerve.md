@@ -23,7 +23,8 @@ private final SwerveSubsystem drive = new SwerveSubsystem();
 
 ### Feedback
 
-* Sensor Types and their use-cases
+* CANcoders
+* [NavX](https://docs.wpilib.org/en/stable/docs/software/hardware-apis/sensors/gyros-software.html#navx) used as gyro. Connected via SPI ([Serial Peripheral Interface](https://en.wikipedia.org/wiki/Serial_Peripheral_Interface)) as recommended by [Studica](https://pdocs.kauailabs.com/navx-mxp/guidance/selecting-an-interface/) for being highest-speed and lowest-latency.
 
 ### Interface types
 

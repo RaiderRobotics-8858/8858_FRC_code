@@ -84,18 +84,16 @@ public class SwerveSubsystem extends SubsystemBase
   public SwerveModule createModule(SparkMax drive, SparkMax azimuth, CANcoder absoluteEncoder, String moduleName,
                                    Translation2d location)
   {
-    // MechanismGearing driveGearing   = new MechanismGearing(GearBox.fromStages("12:1", "2:1"));
-    MechanismGearing driveGearing   = new MechanismGearing(GearBox.fromStages("6.75:1"));
-    // MechanismGearing driveGearing   = new MechanismGearing(GearBox.fromStages("14:50", "27:17", "15:45"));
+    MechanismGearing driveGearing   = new MechanismGearing(GearBox.fromStages("12:1", "2:1"));
     MechanismGearing azimuthGearing = new MechanismGearing(GearBox.fromStages("21:1"));
     SmartMotorControllerConfig driveCfg = new SmartMotorControllerConfig(this)
         .withWheelDiameter(Inches.of(4))
-        .withClosedLoopController(0.05, 0, 0.1)
+        .withClosedLoopController(0.01, 0, 0)
         .withGearing(driveGearing)
         .withStatorCurrentLimit(Amps.of(40))
         .withTelemetry("driveMotor", SmartMotorControllerConfig.TelemetryVerbosity.HIGH);
     SmartMotorControllerConfig azimuthCfg = new SmartMotorControllerConfig(this)
-        .withClosedLoopController(0.9, 0, 0.2)
+        .withClosedLoopController(0.7, 0.0, 0)
         .withContinuousWrapping(Radians.of(-Math.PI), Radians.of(Math.PI))
         .withGearing(azimuthGearing)
         .withStatorCurrentLimit(Amps.of(20))
