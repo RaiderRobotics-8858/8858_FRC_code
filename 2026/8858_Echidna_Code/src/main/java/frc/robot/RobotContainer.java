@@ -21,9 +21,9 @@ import frc.robot.subsystems.SwerveSubsystem;
 public class RobotContainer
 {
 
-  private final SwerveSubsystem   drive    = new SwerveSubsystem();
-  // private final IntakeSubsystem      intake      = new IntakeSubsystem();
-  // private final ShooterSubsystem  shooter  = new ShooterSubsystem();
+  private final SwerveSubsystem drive = new SwerveSubsystem();
+  private final IntakeSubsystem intake = new IntakeSubsystem();
+  private final ShooterSubsystem shooter = new ShooterSubsystem();
 
   private final CommandXboxController xboxController = new CommandXboxController(0);
 
@@ -33,22 +33,22 @@ public class RobotContainer
     drive.setDefaultCommand(drive.setRobotRelativeChassisSpeeds(drive.getChassisSpeedsSupplier(xboxController::getLeftY,
                                                                                                xboxController::getLeftX,
                                                                                                xboxController::getRightX)));
-    // intake.setDefaultCommand(intake.setAngle(Degrees.of(0)));
-    // shooter.setDefaultCommand(shooter.set(0));
+    intake.setDefaultCommand(intake.setAngle(Degrees.of(0)));
+    shooter.setDefaultCommand(shooter.set(0));
     configureBindings();
   }
 
   private void configureBindings()
   {
 
-    // xboxController.a().whileTrue(intake.setAngle(Degrees.of(20)));
-    // xboxController.x().whileTrue(shooter.setVelocity(RPM.of(3000)));
-    // xboxController.leftBumper().whileTrue(drive.driveToPose(new Pose2d(Meters.of(3),
-    //                                                                 Meters.of(3),
-    //                                                                 Rotation2d.fromDegrees(30))));
-    // xboxController.rightBumper().whileTrue(drive.driveToPose(new Pose2d(Meters.of(5),
-    //                                                                 Meters.of(6),
-    //                                                                 Rotation2d.fromDegrees(70))));
+    xboxController.a().whileTrue(intake.setAngle(Degrees.of(20)));
+    xboxController.x().whileTrue(shooter.setVelocity(RPM.of(3000)));
+    xboxController.leftBumper().whileTrue(drive.driveToPose(new Pose2d(Meters.of(3),
+                                                                    Meters.of(3),
+                                                                    Rotation2d.fromDegrees(30))));
+    xboxController.rightBumper().whileTrue(drive.driveToPose(new Pose2d(Meters.of(5),
+                                                                    Meters.of(6),
+                                                                    Rotation2d.fromDegrees(70))));
 
   }
 
