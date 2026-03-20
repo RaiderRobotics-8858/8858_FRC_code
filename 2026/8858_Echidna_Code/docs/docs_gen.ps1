@@ -5,13 +5,13 @@ $inputFiles = @(
     "pandocs_cover_and_config.md", # pandocs_cover_and_config.md should be first since it defines parameters for the entire document as well as the cover page.
     "lists_after_toc.md", # lists_after_toc.md should be second since it places the lists of figures and tables after the table of contents, which is a common convention.
     "Summary.md", # High-Level summary of the robot and button mappings for controller
-    "interfaces.md", # CAN IDs, Digital I/O ports, Analog ports, etc.
     "subsystem_swerve.md", # Drivetrain
     "subsystem_intake.md", # Intake
     "subsystem_launcher.md", # Launcher
     "subsystem_vision.md", # Vision
-    "subsystem_climber.md", # Climber
-    "subsystem_led.md" # LED
+    # "subsystem_climber.md", # Climber
+    "subsystem_led.md", # LED
+    "appendix.md" # Appendix with CAN IDs, Digital I/O ports, Analog ports, etc.
 )
 
 $outputFile = "Echidna_Spec.pdf"
@@ -140,4 +140,5 @@ if ($pandocExitCode -ne 0) {
     exit $pandocExitCode
 }
 
-Write-Host "Wrote $outputFile"
+$outputPath = Resolve-Path $outputFile
+Write-Host "Wrote $outputPath"

@@ -1,201 +1,92 @@
-
-// Copyright (c) FIRST and other WPILib contributors.
-// Open Source Software; you can modify and/or share it under the terms of
-// the WPILib BSD license file in the root directory of this project.
-
 package frc.robot.subsystems;
 
-import static edu.wpi.first.units.Units.Amps;
-import static edu.wpi.first.units.Units.Degrees;
-import static edu.wpi.first.units.Units.DegreesPerSecond;
-import static edu.wpi.first.units.Units.DegreesPerSecondPerSecond;
-import static edu.wpi.first.units.Units.Feet;
-import static edu.wpi.first.units.Units.Second;
-import static edu.wpi.first.units.Units.Seconds;
-import static edu.wpi.first.units.Units.Volts;
+import com.revrobotics.spark.SparkLowLevel.MotorType;
 
-
-import com.revrobotics.spark.SparkMax;
-
-import edu.wpi.first.math.controller.ArmFeedforward;
-import edu.wpi.first.math.system.plant.DCMotor;
-import edu.wpi.first.units.measure.Angle;
-import edu.wpi.first.units.measure.AngularVelocity;
-import edu.wpi.first.units.measure.Current;
-import edu.wpi.first.units.measure.Voltage;
-import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.wpilibj.DutyCycleEncoder;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 
-import org.littletonrobotics.junction.AutoLog;
-import org.littletonrobotics.junction.AutoLogOutput;
-import org.littletonrobotics.junction.Logger;
-import yams.gearing.GearBox;
-import yams.gearing.MechanismGearing;
-import yams.mechanisms.config.ArmConfig;
-import yams.mechanisms.positional.Arm;
-import yams.motorcontrollers.SmartMotorController;
-import yams.motorcontrollers.SmartMotorControllerConfig;
-import yams.motorcontrollers.SmartMotorControllerConfig.ControlMode;
-import yams.motorcontrollers.SmartMotorControllerConfig.MotorMode;
-import yams.motorcontrollers.SmartMotorControllerConfig.TelemetryVerbosity;
-import yams.motorcontrollers.local.SparkWrapper;
+import com.revrobotics.spark.SparkMax;
 
+/**
+ * Subsystem for controlling the intake mechanism, which consists
+ * of an intake arm and rollers to pull in game pieces.
+ */
 public class IntakeSubsystem extends SubsystemBase {
+    private final SparkMax rollerMotor;
+    private final SparkMax armIntakeMotor;
+    private final DutyCycleEncoder armIntakeEncoder;
 
-  public class ArmConstants {
+    /** PID controller for maintaining intake arm position */
+    private final PIDController armPIDController;
+    private final double arm_kP = 0.8;
+    private final double arm_kI = 0.0;
+    private final double arm_kD = 0.0;
 
-    public static final Angle SOME_ANGLE = Degrees.of(20);
-    public static final Angle DOWN_ANGLE = Degrees.of(-35);
-    public static final Angle L1_ANGLE = Degrees.of(65);
-    public static final Angle HANDOFF_ANGLE = Degrees.of(135);
-    public static final double KP = 18;
-    public static final double KI = 0;
-    public static final double KD = 0.2;
-    public static final double KS = -0.1;
-    public static final double KG = 1.2;
-    public static final double KV = 0;
-    public static final double KA = 0;
-    public static final double VELOCITY = 458;
-    public static final double ACCELERATION = 688;
-    public static final int MOTOR_ID = 40;
-    public static final double STATOR_CURRENT_LIMIT = 120;
-    public static final double MOI = 0.1055457256;
+    /**
+     * {@link IntakeSubsystem} constructor.
+     */
+    public IntakeSubsystem() {
+        rollerMotor = new SparkMax(Constants.CAN_INTAKE_ROLLER, MotorType.kBrushless);
+        armIntakeMotor = new SparkMax(Constants.CAN_INTAKE_EXT, MotorType.kBrushless);
+        armIntakeEncoder = new DutyCycleEncoder(Constants.DIO_INTAKE_ABS);
+        armPIDController = new PIDController(arm_kP, arm_kI, arm_kD);
+    }
 
-  }
+    /**
+     * Resets the PID controllers for both launch speed and turret angle.
+     * Should be called when starting a new aiming/launching action to prevent
+     * integral windup and ensure accurate control from the start.
+     */
+    public void resetPID() {
+        armPIDController.reset();
+    }
 
-  /**
-   * AdvantageKit identifies inputs via the "Replay Bubble". Everything going to
-   * the SMC is an Output. Everything coming
-   * from the SMC is an Input.
-   */
-  @AutoLog
-  public static class ArmInputs {
+    /**
+     * Manually moves the intake without PID control
+     * @param speed The speed to set the intake roller motor to, from -1.0 to 1.0
+     */
+    public void setIntakeSpeed(double speed) {
+        double rollerSpeed = speed;
+        if(SmartDashboard.getBoolean("TESTMODE", false)){
+            rollerSpeed = SmartDashboard.getNumber("Intake/IntakeRoller", 0);
+        }
+        rollerMotor.set(rollerSpeed);
+    }
 
-    public Angle pivotPosition = Degrees.of(0);
-    public AngularVelocity pivotVelocity = DegreesPerSecond.of(0);
-    public Angle pivotDesiredPosition = Degrees.of(0);
-    public Voltage pivotAppliedVolts = Volts.of(0);
-    public Current pivotCurrent = Amps.of(0);
+    /**
+     * Returns the current position of the intake arm in encoder units
+     * @return The current position of the intake arm
+     */
+    public double getIntakeArmPosition() {
+        // return armIntakeMotor.getEncoder().getPosition();
+        return armIntakeEncoder.get();
+    }
 
-  }
+    /**
+     * Manually moves the intake arm without PID control
+     * @param speed The speed to set the intake arm motor to, from -1.0 to 1.0
+     */
+    public void setIntakeArmSpeed(double speed) {
+        armIntakeMotor.set(speed);
+    }
 
-  private final ArmInputsAutoLogged armInputs = new ArmInputsAutoLogged();
-
-  private final SparkMax armMotor = new SparkMax(Constants.CAN_INTAKE_EXT, com.revrobotics.spark.SparkLowLevel.MotorType.kBrushless);
-
-  ///
-  /// YAMS Configurations
-  ///
-  private SmartMotorControllerConfig smcConfig = new SmartMotorControllerConfig(this)
-      .withControlMode(ControlMode.CLOSED_LOOP)
-      .withClosedLoopController(ArmConstants.KP,
-          ArmConstants.KI,
-          ArmConstants.KD,
-          DegreesPerSecond.of(ArmConstants.VELOCITY),
-          DegreesPerSecondPerSecond.of(ArmConstants.ACCELERATION))
-      .withSimClosedLoopController(ArmConstants.KP,
-          ArmConstants.KI,
-          ArmConstants.KD,
-          DegreesPerSecond.of(ArmConstants.VELOCITY),
-          DegreesPerSecondPerSecond.of(ArmConstants.ACCELERATION))
-      .withFeedforward(new ArmFeedforward(ArmConstants.KS,
-          ArmConstants.KG,
-          ArmConstants.KV,
-          ArmConstants.KA))
-      .withSimFeedforward(new ArmFeedforward(ArmConstants.KS,
-          ArmConstants.KG,
-          ArmConstants.KV,
-          ArmConstants.KA))
-      .withTelemetry("", TelemetryVerbosity.HIGH)
-      .withGearing(new MechanismGearing(GearBox.fromReductionStages(12.5, 1)))
-      .withMotorInverted(false)
-      .withIdleMode(MotorMode.BRAKE)
-
-      .withStatorCurrentLimit(Amps.of(ArmConstants.STATOR_CURRENT_LIMIT));
-
-  private SmartMotorController armSMC = new SparkWrapper(armMotor, DCMotor.getNEO(1), smcConfig);
-
-  private ArmConfig armCfg = new ArmConfig(armSMC)
-      .withHardLimit(Degrees.of(-25), Degrees.of(141))
-      .withStartingPosition(Degrees.of(141))
-      .withLength(Feet.of((14.0 / 12)))
-      .withMOI(ArmConstants.MOI)
-      .withTelemetry("Arm", TelemetryVerbosity.HIGH);
-
-  // Arm Mechanism
-  private Arm arm = new Arm(armCfg);
-
-  /**
-   * Updates AdvantageKit inputs from the {@link Arm} to be used in the rest of
-   * the program.
-   */
-  public void updateInputs() {
-    armInputs.pivotPosition = arm.getAngle();
-    armInputs.pivotVelocity = armSMC.getMechanismVelocity();
-    armInputs.pivotAppliedVolts = armSMC.getVoltage();
-    armInputs.pivotCurrent = armSMC.getStatorCurrent();
-  }
-
-  /**
-   * Set the angle of the arm.
-   *
-   * @param angle Angle to go to.
-   */
-  public Command setAngle(Angle angle) {
-    return arm.setAngle(angle);
-  }
-
-  /**
-   * Move the arm up and down.
-   *
-   * @param dutycycle [-1, 1] speed to set the arm too.
-   */
-  // public Command set(double dutycycle) { return arm.set(dutycycle);}
-
-  /**
-   * Run sysId on the {@link Arm}
-   */
-  public Command sysId() {
-    return arm.sysId(Volts.of(7), Volts.of(2).per(Second), Seconds.of(4));
-  }
-
-  @Override
-  public void periodic() {
-    // This method will be called once per scheduler run
-    updateInputs();
-    Logger.processInputs("Arm", armInputs);
-    arm.updateTelemetry();
-  }
-
-  @Override
-  public void simulationPeriodic() {
-    // This method will be called once per scheduler run during simulation
-    arm.simIterate();
-  }
-
-  @AutoLogOutput
-  public Angle getAngleSetpoint() {
-    return armSMC.getMechanismPositionSetpoint().orElse(null);
-  }
-
-  public Angle getAngle() {
-    return armInputs.pivotPosition;
-  }
-
-  public AngularVelocity getVelocity() {
-    return armInputs.pivotVelocity;
-  }
-
-  public Angle getSetpointAngle() {
-    return armInputs.pivotDesiredPosition;
-  }
-
-  public Voltage getVoltage() {
-    return armInputs.pivotAppliedVolts;
-  }
-
-  public Current getCurrent() {
-    return armInputs.pivotCurrent;
-  }
+    /**
+     * Moves the intake arm to the target position using PID control
+     * @param targetPosition The target position for the intake arm
+     */
+    public void setIntakeArmPosition(double targetPosition) {
+        double output = armPIDController.calculate(getIntakeArmPosition(), targetPosition);
+        setIntakeArmSpeed(output);
+    }
+    // Gets Roller Temp
+     public double getRollerTemp() {
+        return rollerMotor.getMotorTemperature();
+    }
+    // Gets Intake Temp
+     public double getIntakeTemp() {
+        return armIntakeMotor.getMotorTemperature();
+    }
 }
