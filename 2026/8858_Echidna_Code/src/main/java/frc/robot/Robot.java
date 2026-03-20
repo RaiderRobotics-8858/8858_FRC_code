@@ -6,6 +6,7 @@
 package frc.robot;
 
 import edu.wpi.first.wpilibj.RobotBase;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import org.littletonrobotics.junction.LogFileUtil;
@@ -64,11 +65,23 @@ public class Robot extends LoggedRobot {
     Logger.start();
 
     robotContainer = new RobotContainer();
+    SmartDashboard.putNumber("configlaunch", 0);
+    SmartDashboard.putNumber("Launcher/ManualMotorSpeed", 0);
+    SmartDashboard.putNumber("Intake/IntakeRoller", 0); 
+    SmartDashboard.putNumber("Intake/RollerSpeed", Constants.HOPPER_ROLLER_SPEED);
+    SmartDashboard.putBoolean("TESTMODE", false);
+    SmartDashboard.putNumber("Launcher/launch_kP", Constants.LAUNCH_KP);
+    SmartDashboard.putNumber("Launcher/launch_kI", Constants.LAUNCH_KI);
+    SmartDashboard.putNumber("Launcher/launch_kD", Constants.LAUNCH_KD);
+    SmartDashboard.putNumber("Launcher/launch_ff", Constants.LAUNCH_FF);
+    SmartDashboard.putBoolean("Launcher/TurretZeroedFlag", false);
+    SmartDashboard.putNumber("Launcher/AngleAdjust", 0);
   }
 
   @Override
   public void robotPeriodic() {
     CommandScheduler.getInstance().run();
+    robotContainer.periodic();
   }
 
   @Override

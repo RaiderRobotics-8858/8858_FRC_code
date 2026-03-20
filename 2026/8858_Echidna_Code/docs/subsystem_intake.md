@@ -1,57 +1,81 @@
 
 # Intake Subsystem
 
-The intake system is built to make our robot be able to pick up balls from the ground into the robot at a fast rate.
+The Intake Subsystem consists of a motorized arm and roller system designed to pick up spherical game pieces (aka "Fuel") from the ground and feed them into the robot's hopper at a fast rate. Once in the hopper, additional rollers will help feed the fuel into into the launcher subsystem.
 
 ## Coding
 
-* Intial code made from [YAMS](https://github.com/Yet-Another-Software-Suite/YAMS/tree/master/examples/advantage_kit).
+Intake code is completely original to this robot.
+
+Subsystem definition can be found within `src/main/java/frc/robot/subsystems/` as `IntakeSubsystem.java` and `HopperSubsystem.java`.
 
 ```java
-private final ArmSubsystem arm = new ArmSubsystem();
+// Example instantiation within RobotContainer.java
+private final HopperSubsystem hopperSubsystem = new HopperSubsystem();
+private final IntakeSubsystem intakeSubsystem = new IntakeSubsystem();
+```
+
+The default command for the Intake Subsystem will lower the intake arm and run the intake roller. The hopper rollers will be off by default but turn on during launching.
+
+This command can be found under `src/main/java/frc/robot/commands/IntakeCommand.java`
+
+```java
+// example default command for IntakeSubsystem
+intakeSubsystem.setDefaultCommand(
+    new activateIntake(
+        intakeSubsystem,
+        hopperSubsystem,
+        Constants.INTAKE_ARM_LOWERED,
+        Constants.INTAKE_ROLLER_SPEED,
+        0.0 // hopper off by default
+    )
+);
 ```
 
 ### Tele-op control
 
-* When a trigger is pressed, the intake will toggle on so the driver doesn't have to keep holding it. When pressed again, it will turn off.
+Intake will default to being active when the robot is enabled. When launching is in progress, the hopper motors activate and the intake arm raises in order to help feed fuel into the launcher, increasing throughput.
 
 ### Autonomous control
 
-* It will rely on beam breaks on the hopper with some help with Pathfinder in order to know when to turn on the intake. Possibly not used in auton due to strategy.
+Autonomous will re-use tele-op commands to run the intake and hopper as needed during autonomous routines.
 
 ## Electrical
 
 ### Feedback
 
-* Encoders: In order to know how much the motor moves
-* Distance/IR: In order to know when the hopper is full in order to stop the intake
+* Absolute Encoders on Intake arm to reliably control position to repeatable positions using PID control
 
 ### Interface types
 
 Table: Intake CAN IDs
 
-| CAN ID | Function                |
-|--------|-------------------------|
-|14      |Intake Roller Motor      |
-|15      |Intake External Motor    |
-|17      |Hopper Motor             |
+| CAN ID | Function                 |
+|--------|--------------------------|
+|15      |Intake Roller Motor       |
+|16      |Intake External Motor     |
+|17      |Hopper Motor              |
 
 Table: Intake Digital IO IDs
 
 | DIO #  | Function             |
 |--------|----------------------|
-|0       |Intake Encoder        |
+|0       |Intake Arm Encoder    |
 |`[5:3]` |Hopper Level`[2:0]`   |
 
 ## Mechanical
 
-* Initial source material source
-* [link to the source](https://example.com/) if available
+Initial design cam from [Cranberry Alarm Ri3D](https://www.youtube.com/watch?v=qxTU4_RFJNo)
+Modifications include:
+
+* removing some hopper wheels on right side of the hopper to avoid fuel jamming at the launcher entrance.
 
 ### CAD Models
 
 ![Front View of Intake](images/IntakeFront.png)
 
 ![Side View of Intake](images/IntakeSide.png)
+
+![Top View of Hopper](images/Hopper.png)
 
 <!-- pagebreak -->

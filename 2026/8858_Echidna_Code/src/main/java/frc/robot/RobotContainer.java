@@ -5,55 +5,218 @@
 
 package frc.robot;
 
-import static edu.wpi.first.units.Units.Degrees;
-import static edu.wpi.first.units.Units.Meters;
-import static edu.wpi.first.units.Units.RPM;
+import java.io.File;
+
+import com.pathplanner.lib.auto.AutoBuilder;
 
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
+import static edu.wpi.first.units.Units.Inches;
+import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.Filesystem;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
+import frc.robot.commands.launchCommand;
+import frc.robot.controls.DriverControls;
+import frc.robot.subsystems.HopperSubsystem;
 import frc.robot.subsystems.IntakeSubsystem;
-import frc.robot.subsystems.ShooterSubsystem;
+import frc.robot.subsystems.LEDSubsystem;
+import frc.robot.subsystems.LauncherSubsystem;
 import frc.robot.subsystems.SwerveSubsystem;
+import frc.robot.subsystems.ClimberSubsystem;
+import swervelib.SwerveDrive;
 
-public class RobotContainer
-{
+public class RobotContainer {
 
-  private final SwerveSubsystem drive = new SwerveSubsystem();
-  private final IntakeSubsystem intake = new IntakeSubsystem();
-  private final ShooterSubsystem shooter = new ShooterSubsystem();
+    private final SwerveSubsystem drive = new SwerveSubsystem(new File(Filesystem.getDeployDirectory(), "swerve/neo"));
+    private final LauncherSubsystem launcherSubsystem = new LauncherSubsystem(drive::getPose);
+    private final HopperSubsystem hopperSubsystem = new HopperSubsystem();
+    private final IntakeSubsystem intakeSubsystem = new IntakeSubsystem();
+    private final LEDSubsystem ledSubsystem = new LEDSubsystem();
+    private final ClimberSubsystem climberSubsystem = new ClimberSubsystem();
 
-  private final CommandXboxController xboxController = new CommandXboxController(0);
+    private SendableChooser<Command> autoChooser;
 
-  public RobotContainer()
-  {
-    DriverStation.silenceJoystickConnectionWarning(true);
-    drive.setDefaultCommand(drive.setRobotRelativeChassisSpeeds(drive.getChassisSpeedsSupplier(xboxController::getLeftY,
-                                                                                               xboxController::getLeftX,
-                                                                                               xboxController::getRightX)));
-    intake.setDefaultCommand(intake.setAngle(Degrees.of(0)));
-    shooter.setDefaultCommand(shooter.set(0));
-    configureBindings();
-  }
+    // Track current alliance for change detection
+    private Alliance currentAlliance = Alliance.Red;
 
-  private void configureBindings()
-  {
+    public RobotContainer()
+    {
+        // Configure the trigger bindings
+        configureBindings();
+        // buildNamedAutoCommands();
 
-    xboxController.a().whileTrue(intake.setAngle(Degrees.of(20)));
-    xboxController.x().whileTrue(shooter.setVelocity(RPM.of(3000)));
-    xboxController.leftBumper().whileTrue(drive.driveToPose(new Pose2d(Meters.of(3),
-                                                                    Meters.of(3),
-                                                                    Rotation2d.fromDegrees(30))));
-    xboxController.rightBumper().whileTrue(drive.driveToPose(new Pose2d(Meters.of(5),
-                                                                    Meters.of(6),
-                                                                    Rotation2d.fromDegrees(70))));
+        // Initialize alliance (default to red if not present)
+        onAllianceChanged(getAlliance());
 
-  }
+        // Set up trigger to detect alliance changes
+        new Trigger(() -> getAlliance() != currentAlliance)
+            .onTrue(Commands.runOnce(() -> onAllianceChanged(getAlliance())).ignoringDisable(true));
 
-  public Command getAutonomousCommand()
-  {
-    return null;
-  }
+        // Triggers for auto aim/pass poses
+        new Trigger(() -> isInAllianceZone())
+            .onChange(Commands.runOnce(() -> onZoneChanged()).ignoringDisable(true));
+
+        new Trigger(() -> isOnAllianceOutpostSide())
+            .onChange(Commands.runOnce(() -> onZoneChanged()).ignoringDisable(true));
+
+        if (!Robot.isReal() || true) {
+        DriverStation.silenceJoystickConnectionWarning(true);
+        }
+
+        // Have the autoChooser pull in all PathPlanner autos as options. PathPlanner's
+        // AutoBuilder may not be configured on the RoboRIO if GUI settings are
+        // missing or setupPathPlanner failed, which throws at runtime and will
+        // crash the robot. Try to build the chooser and fall back to an empty
+        // chooser when that happens.
+        try {
+            autoChooser = AutoBuilder.buildAutoChooser();
+        } catch (Exception e) {
+            // Report the problem but keep the robot running with a simple chooser
+            // so the rest of the robot code can operate.
+            DriverStation.reportWarning("AutoBuilder.buildAutoChooser() failed: " + e.toString(), true);
+            autoChooser = new SendableChooser<>();
+        }
+
+        // Set the default auto (do nothing)
+        autoChooser.setDefaultOption("Do Nothing", Commands.none());
+
+        // Add a simple auto option to have the robot drive forward for 1 second then
+        // stop
+        autoChooser.addOption("Drive Forward",
+        new SequentialCommandGroup(
+            drive.driveBackwards().withTimeout(2),
+            new launchCommand(launcherSubsystem, hopperSubsystem, intakeSubsystem)
+        )
+        );
+
+        // Add each auto name returned by PathPlanner's AutoBuilder as an option
+        // AutoBuilder.getAllAutoNames() may return a collection/array of names.
+        try {
+            for (Object nameObj : AutoBuilder.getAllAutoNames()) {
+                String name = String.valueOf(nameObj);
+                try {
+                    autoChooser.addOption(name, drive.getAutonomousCommand(name));
+                } catch (Exception e) {
+                    DriverStation.reportWarning("Failed to create auto command for '" + name + "': " + e.toString(), false);
+                }
+            }
+        } catch (Exception e) {
+            DriverStation.reportWarning("Failed to list autos from AutoBuilder: " + e.toString(), false);
+        }
+
+        // Put the autoChooser on the SmartDashboard
+        SmartDashboard.putData("Auto Chooser", autoChooser);
+
+        DriverStation.silenceJoystickConnectionWarning(true);
+        configureBindings();
+    }
+
+    private void configureBindings(){
+        DriverControls.configure(
+          Constants.XBOX_CONTROLLER_PORT,
+          drive,
+          launcherSubsystem,
+          intakeSubsystem,
+          hopperSubsystem,
+          ledSubsystem,
+          climberSubsystem
+        );
+    }
+
+    public Command getAutonomousCommand() {
+      return autoChooser.getSelected();
+    }
+
+    public SwerveDrive getSwerveDrive() {
+        return drive.getSwerveDrive();
+    }
+
+    public Pose2d getRobotPose() {
+        return drive.getPose();
+    }
+
+    private Alliance getAlliance() {
+        return DriverStation.getAlliance().orElse(Alliance.Red);
+    }
+
+    private boolean isInAllianceZone() {
+        Alliance alliance = getAlliance();
+        Distance blueZone = Inches.of(182);
+        Distance redZone = Inches.of(469);
+
+        if (alliance == Alliance.Blue && drive.getPose().getMeasureX().lt(blueZone)) {
+            return true;
+        } else if (alliance == Alliance.Red && drive.getPose().getMeasureX().gt(redZone)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private boolean isOnAllianceOutpostSide() {
+        Alliance alliance = getAlliance();
+        Distance midLine = Inches.of(158.84375);
+
+        if (alliance == Alliance.Blue && drive.getPose().getMeasureY().lt(midLine)) {
+            return true;
+        } else if (alliance == Alliance.Red && drive.getPose().getMeasureY().gt(midLine)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private void onZoneChanged() {
+        // if (isInAllianceZone()) {
+        //   superstructure.setAimPoint(Constants.AimPoints.getAllianceHubPosition());
+        // } else {
+        //   if (isOnAllianceOutpostSide()) {
+        //     superstructure.setAimPoint(Constants.AimPoints.getAllianceOutpostPosition());
+        //   } else {
+        //     superstructure.setAimPoint(Constants.AimPoints.getAllianceFarSidePosition());
+        //   }
+        // }
+    }
+
+    private void onAllianceChanged(Alliance alliance) {
+        currentAlliance = alliance;
+
+        // Update aim point based on alliance
+        // if (alliance == Alliance.Blue) {
+        //   superstructure.setAimPoint(Constants.AimPoints.BLUE_HUB.value);
+        // } else {
+        //   superstructure.setAimPoint(Constants.AimPoints.RED_HUB.value);
+        // }
+
+        System.out.println("Alliance changed to: " + alliance);
+    }
+
+    public void periodic() {
+        // Launcher stats
+        SmartDashboard.putNumber("Launcher/LaunchSpeed", launcherSubsystem.getLaunchSpeed());
+        SmartDashboard.putNumber("Launcher/TurretAngle", launcherSubsystem.getTurretAngle());
+        SmartDashboard.putNumber("Launcher/KickerCurrent", launcherSubsystem.getKickerCurrent());
+        SmartDashboard.putNumber("Launcher/KickerVelo", launcherSubsystem.getKikckerVelocity());
+        SmartDashboard.putNumber("Launcher/LauncherCurrent", launcherSubsystem.getLauncherCurrent());
+        SmartDashboard.putBoolean("Launcher/TurretZero", launcherSubsystem.getTurretZeroOutput());
+        SmartDashboard.putBoolean("Launcher/LaunchSense", launcherSubsystem.getLaunchOutput());
+
+        // Intake stats
+        SmartDashboard.putNumber("Intake/ArmPosition", intakeSubsystem.getIntakeArmPosition());
+        SmartDashboard.putNumber("Launcher Temp", launcherSubsystem.getLauncherTemp());
+        SmartDashboard.putNumber("KickerTemp", launcherSubsystem.getKickerTemp());
+        SmartDashboard.putNumber("Turret Angle Temp", launcherSubsystem.getTurretAngleTemp());
+        SmartDashboard.putNumber("Hopper Temp", hopperSubsystem.getHopperTemp());
+        SmartDashboard.putNumber("Intake Temp", intakeSubsystem.getIntakeTemp());
+        SmartDashboard.putNumber("Roller Temp", intakeSubsystem.getRollerTemp());
+
+        SmartDashboard.putNumber("Intake/HopperCurrent", hopperSubsystem.getCurrent());
+        SmartDashboard.putNumber("Climb/Position", climberSubsystem.getclimberpos());
+    }
 }
