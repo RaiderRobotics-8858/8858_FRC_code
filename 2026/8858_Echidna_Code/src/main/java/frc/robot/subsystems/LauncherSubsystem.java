@@ -47,9 +47,9 @@ public class LauncherSubsystem extends SubsystemBase {
 
     /** PID controller for maintaining turret angle */
     private final PIDController anglePIDController;
-    private final double angle_kP = 0.01;
-    private final double angle_kI = 0.01;
-    private final double angle_kD = 0;
+    private final double angle_kP = Constants.TURRET_ANGLE_KP;
+    private final double angle_kI = Constants.TURRET_ANGLE_KI;
+    private final double angle_kD = Constants.TURRET_ANGLE_KD;
 
     private final TreeMap<Double, Double> distanceToSpeed = new TreeMap<>();
 
@@ -117,10 +117,17 @@ public class LauncherSubsystem extends SubsystemBase {
      * integral windup and ensure accurate control from the start.
      */
     public void resetPID() {
+
         LaunchPIDController.setPID(
             SmartDashboard.getNumber("Launcher/launch_kP", launch_kP),
             SmartDashboard.getNumber("Launcher/launch_kI", launch_kI),
             SmartDashboard.getNumber("Launcher/launch_kD", launch_kD)
+        );
+
+        anglePIDController.setPID(
+            SmartDashboard.getNumber("Launcher/angle_kP", angle_kP),
+            SmartDashboard.getNumber("Launcher/angle_kI", angle_kI),
+            SmartDashboard.getNumber("Launcher/angle_kD", angle_kD)
         );
         LaunchPIDController.reset();
         anglePIDController.reset();
@@ -306,15 +313,16 @@ public class LauncherSubsystem extends SubsystemBase {
                 SmartDashboard.putString("aimtarget","BLUE_HUB");
                 return Constants.AimPoints.BLUE_HUB;
             } else if (robotpositionPose2d.getX()>4.5){
+                setTurretAngle(0);
                 if (robotpositionPose2d.getY()>4.03){
                     // If in right half of midfield, aim at outpost for passing back
-                    aimatTarget(Constants.AimPoints.BLUE_OUTPOST);
+                    // aimatTarget(Constants.AimPoints.BLUE_OUTPOST); // TODO undo once midfield targetting is fixed
                     SmartDashboard.putString("aimtarget","BLUE_OUTPOST");
                     return Constants.AimPoints.BLUE_OUTPOST;
                 }
                 else if (robotpositionPose2d.getY()<4.03){
                     // If in left half of midfield, aim at far side for passing back
-                    aimatTarget(Constants.AimPoints.BLUE_FAR_SIDE);
+                    // aimatTarget(Constants.AimPoints.BLUE_FAR_SIDE); // TODO undo once midfield targetting is fixed
                     SmartDashboard.putString("aimtarget","BLUE_FAR_SIDE");
                     return Constants.AimPoints.BLUE_FAR_SIDE;
                 }
@@ -327,15 +335,16 @@ public class LauncherSubsystem extends SubsystemBase {
                 SmartDashboard.putString("aimtarget","RED_HUB");
                 return Constants.AimPoints.RED_HUB;
             } else if (robotpositionPose2d.getX()<11.9){
-               if (robotpositionPose2d.getY()<4.03){
+                setTurretAngle(0);
+                if (robotpositionPose2d.getY()<4.03){
                     // If in left half of midfield, aim at outpost for passing back
-                    aimatTarget(Constants.AimPoints.RED_OUTPOST);
+                    // aimatTarget(Constants.AimPoints.RED_OUTPOST); // TODO undo once midfield targetting is fixed
                     SmartDashboard.putString("aimtarget","RED_OUTPOST");
                     return Constants.AimPoints.RED_OUTPOST;
                 }
                 else if (robotpositionPose2d.getY()>4.03){
                     // If in right half of midfield, aim at far side for passing back
-                    aimatTarget(Constants.AimPoints.RED_FAR_SIDE);
+                    // aimatTarget(Constants.AimPoints.RED_FAR_SIDE); // TODO undo once midfield targetting is fixed
                     SmartDashboard.putString("aimtarget","RED_FAR_SIDE");
                     return Constants.AimPoints.RED_FAR_SIDE;
                 }
@@ -364,25 +373,28 @@ public class LauncherSubsystem extends SubsystemBase {
         // use that vector to set a turret angle which points the turret at the target.
         double radius = Math.sqrt(Math.pow(difference.getX(),2)+Math.pow(difference.getY(),2));
         SmartDashboard.putNumber("Distance_to_Target", radius);
-
+        SmartDashboard.putNumber("Launcher/DiffY", difference.getY());
+        SmartDashboard.putNumber("Launcher/DiffX", difference.getX());
+        SmartDashboard.putNumber("Launcher/Arctan",  Math.toDegrees(Math.atan(difference.getX()/difference.getY())));
         // Get direction on the field to the target in degrees
-        double angle = Math.atan(difference.getX()/difference.getY());
+        double angle = Math.atan(difference.getY()/difference.getX());
+        angle = Math.toDegrees(angle); // TODO experiment with using this conversion or not, atan seems to sometimes give results in degrees and sometimes in radians for some reason so this may or may not be necessary
 
         if (alliance==Alliance.Red) {
             turretAngle = MathUtil.inputModulus(
-                angle - getRobotPose().getRotation().getDegrees(),
+                angle - (.5)*(getRobotPose().getRotation().getDegrees()),
                 -180,
                 180
             );
         } else {
             turretAngle = MathUtil.inputModulus(
-                angle - getRobotPose().getRotation().getDegrees() + 180 /* Blue Alliance is 180 degrees rotated from Robot's perspective */,
+                angle - (0.5)*(getRobotPose().getRotation().getDegrees()) + 180 /* Blue Alliance is 180 degrees rotated from Robot's perspective */,
                 -180,
                 180
             );
         }
 
-        setTurretAngle(turretAngle);
+        setTurretAngle(turretAngle); // try multiplying by 0.5 (or other value)
     }
 
     /**

@@ -9,15 +9,18 @@ import edu.wpi.first.wpilibj.util.Color;
 import com.ctre.phoenix6.signals.RGBWColor;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
+import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.Constants;
 import frc.robot.Robot;
 import frc.robot.commands.activateIntake;
-import frc.robot.commands.adjustangle;
 import frc.robot.commands.aimAtTarget;
 import frc.robot.commands.launchCommand;
 import frc.robot.commands.moveClimber;
 import frc.robot.commands.moveHopper;
+import frc.robot.commands.resetCommand;
+import frc.robot.commands.setclimberpos;
 import frc.robot.subsystems.HopperSubsystem;
 import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.LEDSubsystem;
@@ -71,21 +74,7 @@ public class DriverControls {
             )
         );
 
-        // default to having intake active and hopper running at low speed to prevent jams, with arm lowered for intaking from the floor
-        intakeSubsystem.setDefaultCommand(
-            new activateIntake(
-                intakeSubsystem,
-                hopperSubsystem,
-                Constants.INTAKE_ARM_LOWERED,
-                Constants.INTAKE_ROLLER_SPEED,
-                0.0
-            )
-        );
-
         if (DriverStation.isTest()) {
-            // drivetrain.setDefaultCommand(driveFieldOrientedAngularVelocity);
-            // Overrides drive command above!
-            // Might be useful for robot-oriented controls in testing
 
             controller.b().whileTrue(drivetrain.centerModulesCommand());
             controller.x().whileTrue(Commands.runOnce(drivetrain::lock, drivetrain).repeatedly());
@@ -102,6 +91,8 @@ public class DriverControls {
                 )
             );
         } else {
+
+            // Software Reset
             controller.start().onTrue((Commands.runOnce(drivetrain::zeroGyro)));
 
             // command to launch Fuel
@@ -109,45 +100,87 @@ public class DriverControls {
                 new launchCommand(
                     launcherSubsystem,
                     hopperSubsystem,
-                    intakeSubsystem
+                    intakeSubsystem,
+                    ledSubsystem
                 )
             );
 
-            // command to climb up
+            // slowly extend climber
             controller.rightBumper().whileTrue(
                new moveClimber(
                 climberSubsystem,
-                .4
-               ) 
-                
+                .1
+               )
             );
 
-            // command to climb down
+            // slowly retract climber
             controller.leftBumper().whileTrue(
                 new moveClimber(
                   climberSubsystem,
-                  (-.3)
+                  (-.1)
                 )
             );
 
+            // Lower climber to preset position
             controller.povLeft().onTrue(
-                new adjustangle(1)
+                 new ParallelCommandGroup(
+                    new setclimberpos(climberSubsystem, 0),
+                    new activateIntake(
+                        intakeSubsystem,
+                        hopperSubsystem,
+                        Constants.INTAKE_ARM_RAISED, 
+                        0, 
+                        0)
+                 )
             );
 
+            // Raise climber to preset position
             controller.povRight().onTrue(
-                new adjustangle(-1)
+                new ParallelCommandGroup(
+                    new setclimberpos(climberSubsystem, Constants.CLIMB_EXTENDED_POS),
+                    new activateIntake(
+                        intakeSubsystem,
+                        hopperSubsystem,
+                        Constants.INTAKE_ARM_RAISED, 
+                        0, 
+                        0)
+                 )
             );
 
-            controller.leftTrigger(0.6).whileTrue(
+            // Oil Spill Mode for Intake and Hopper
+            controller.back().whileTrue(
+                new activateIntake(
+                    intakeSubsystem,
+                    hopperSubsystem,
+                    Constants.INTAKE_ARM_LOWERED,
+                    -Constants.INTAKE_ROLLER_SPEED,
+                    -Constants.HOPPER_ROLLER_SPEED
+                )
+            );
+
+            // Default intake mode is active
+            controller.leftTrigger(0.6).whileFalse(
                 new activateIntake(
                     intakeSubsystem,
                     hopperSubsystem,
                     Constants.INTAKE_ARM_LOWERED,
                     Constants.INTAKE_ROLLER_SPEED,
+                    0
+                )
+            );
+
+            // Raises the intake arm
+            controller.leftTrigger(0.6).whileTrue(
+                new activateIntake(
+                    intakeSubsystem,
+                    hopperSubsystem,
+                    Constants.INTAKE_ARM_RAISED,
+                    Constants.INTAKE_ROLLER_SPEED,
                     Constants.HOPPER_ROLLER_SPEED
                 )
             );
 
+            // Fixes jams by reversing the hopper rollers
             controller.x().whileTrue(
                 new activateIntake(
                     intakeSubsystem,
@@ -158,6 +191,7 @@ public class DriverControls {
                 )
             );
 
+            // Begin Color Modes
             controller.povUp().and(controller.a()).onTrue(
                 ledSubsystem.larsonWithColor(new RGBWColor(Color.kGreen))
             );
@@ -173,6 +207,7 @@ public class DriverControls {
             controller.povUp().and(controller.y()).onTrue(
                 ledSubsystem.larsonWithColor(new RGBWColor(Color.kYellow))
             );
+            // End Color Modes
         }
   }
 

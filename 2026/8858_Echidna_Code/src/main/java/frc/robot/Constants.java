@@ -49,7 +49,10 @@ public class Constants {
     public static final double LOOP_TIME = 0.13; // s, 20ms + 110ms spark max velocity lag
     public static final double MAX_SPEED = Units.feetToMeters(30);
 
-    // Launch Subsystem Constants
+    // Launch subsystem Constants
+    public static final double TURRET_ANGLE_KP = 0.01;
+    public static final double TURRET_ANGLE_KI = 0.01;
+    public static final double TURRET_ANGLE_KD = 0;
     public static final double LAUNCH_KP = 0.2;
     public static final double LAUNCH_KI = 0.7;
     public static final double LAUNCH_KD = 0.0;
@@ -67,13 +70,21 @@ public class Constants {
     public static final double TURRET_LEFT_LIMIT_DEG = TURRET_LEFT_LIMIT * TURRET_DEGREES_PER_UNIT; // Left limit for turret angle (degrees)
     public static final double TURRET_CENTER = 0.0; // Center position for turret angle (degrees)
 
-    //Intake susbystems constants
+    // Intake susbystems constants
+    public static final double INTAKE_ARM_KP = 0.8;
+    public static final double INTAKE_ARM_KI = 0;
+    public static final double INTAKE_ARM_KD = 0;
     public static final double INTAKE_ARM_LOWERED = 0.82;
-    public static final double INTAKE_ARM_RAISED = 0.60;
+    public static final double INTAKE_ARM_HALF_RAISED = 0.60;
+    public static final double INTAKE_ARM_RAISED = 0.35;
     public static final double INTAKE_ROLLER_SPEED = 1.0;
     public static final double HOPPER_ROLLER_SPEED = 1.0;
 
-    public static final double CLIMB_EXTENDED_POS = -114.0;
+    // Climber subsystem constants
+    public static final double CLIMB_EXTENDED_POS = 114.0;
+    public static final double CLIMBER_KP = 0.10;
+    public static final double CLIMBER_KI = 0.6;
+    public static final double CLIMBER_KD = 0;
 
 
     public static enum AimPoints {
@@ -111,6 +122,6 @@ public class Constants {
     // Controller Constants
     public static final int XBOX_CONTROLLER_PORT = 0;
     public static final double DEADBAND = 0.1;
-    public static final double TRANSLATION_SCALE = 0.25;
+    public static final double TRANSLATION_SCALE = 0.5;
     public static final double ROTATION_SCALE = 1.0;
 }

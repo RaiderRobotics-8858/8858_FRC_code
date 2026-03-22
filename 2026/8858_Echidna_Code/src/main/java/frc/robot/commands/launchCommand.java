@@ -1,17 +1,23 @@
 package frc.robot.commands;
 
+import com.ctre.phoenix6.signals.RGBWColor;
+
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.Constants;
 import frc.robot.Constants.AimPoints;
 import frc.robot.subsystems.HopperSubsystem;
 import frc.robot.subsystems.IntakeSubsystem;
+import frc.robot.subsystems.LEDSubsystem;
 import frc.robot.subsystems.LauncherSubsystem;
 
 public class launchCommand extends Command {
     private final LauncherSubsystem launcherSubsystem;
     private final HopperSubsystem hopperSubsystem;
     private final IntakeSubsystem intakeSubsystem;
+    private final LEDSubsystem ledSubsystem;
     private boolean hit_speed_flag;
 
     /**
@@ -24,10 +30,11 @@ public class launchCommand extends Command {
      * @param targetSpeed The target speed for the launcher
      * @param targetPose The pose of the target for the launcher to aim at
      */
-    public launchCommand(LauncherSubsystem launcherSubsystem, HopperSubsystem hopperSubsystem, IntakeSubsystem intakeSubsystem) {
+    public launchCommand(LauncherSubsystem launcherSubsystem, HopperSubsystem hopperSubsystem, IntakeSubsystem intakeSubsystem, LEDSubsystem ledSubsystem) {
         this.launcherSubsystem = launcherSubsystem;
         this.hopperSubsystem = hopperSubsystem;
         this.intakeSubsystem = intakeSubsystem;
+        this.ledSubsystem = ledSubsystem;
         addRequirements(launcherSubsystem);
     }
 
@@ -43,7 +50,7 @@ public class launchCommand extends Command {
 
         double targetSpeed = launcherSubsystem.getLaunchSpeed(target);
         launcherSubsystem.setLaunchSpeed(targetSpeed); // Set launch motors to maintain target speed
-        // launcherSubsystem.findTarget();
+        ledSubsystem.larsonWithColor(new RGBWColor(Color.kYellow)); // Set LED pattern to indicate launching
         intakeSubsystem.setIntakeSpeed(0.6); // Set intake roller speed
 
         if (launcherSubsystem.isAtTargetSpeed(targetSpeed) && !hit_speed_flag) {
@@ -54,11 +61,15 @@ public class launchCommand extends Command {
 
         if (hit_speed_flag) {
             hopperSubsystem.setHopperSpeed(SmartDashboard.getNumber("Intake/RollerSpeed", Constants.HOPPER_ROLLER_SPEED));
-            intakeSubsystem.setIntakeArmPosition(Constants.INTAKE_ARM_RAISED);
+            intakeSubsystem.setIntakeArmPosition(Constants.INTAKE_ARM_HALF_RAISED);
             launcherSubsystem.activateKicker(); // Feed the kicker only when at target speed and angle
         } else {
             hopperSubsystem.setHopperSpeed(0);
             intakeSubsystem.setIntakeArmPosition(Constants.INTAKE_ARM_LOWERED);
+        }
+         if (!launcherSubsystem.getLaunchOutput()){
+            SmartDashboard.putNumber("Launcher/Time Since Last Fuel", DriverStation.getMatchTime());
+
         }
     }
 
@@ -73,6 +84,14 @@ public class launchCommand extends Command {
 
     @Override
     public boolean isFinished() {
-        return false; // always active command, never finishes on its own
+
+
+        double lastfueltime = SmartDashboard.getNumber("Launcher/Time Since Last Fuel", 0);
+        if ((lastfueltime - 3 > DriverStation.getMatchTime()) && (DriverStation.isAutonomous())){
+            return true;
+        } else {
+
+            return false; // always active command, never finishes on its own
+        }
     }
 }
