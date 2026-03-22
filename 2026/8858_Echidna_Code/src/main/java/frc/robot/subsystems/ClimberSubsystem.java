@@ -1,9 +1,9 @@
 package frc.robot.subsystems;
 
 import com.revrobotics.spark.SparkLowLevel.MotorType;
-import com.thethriftybot.devices.ThriftyNova.PIDConfig;
 
 import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 
@@ -16,9 +16,9 @@ public class ClimberSubsystem extends SubsystemBase {
     private final SparkMax ClimberMotor;
 
     private final PIDController climberpid;
-    private final double clim_kP = 0.8;
-    private final double clim_kI = 0.0;
-    private final double clim_kD = 0.0;
+    private final double clim_kP = Constants.CLIMBER_KP;
+    private final double clim_kI = Constants.CLIMBER_KI;
+    private final double clim_kD = Constants.CLIMBER_KD;
     /**
      * {@link ClimberSubsystem} constructor.
      */
@@ -27,7 +27,10 @@ public class ClimberSubsystem extends SubsystemBase {
         climberpid = new PIDController(clim_kP, clim_kI, clim_kD);
     }
 
-    public double getclimberpos(){
+    /**
+     * Returns the current position of the Climber in encoder units
+     */
+    public double getClimberPos(){
       return  ClimberMotor.getEncoder().getPosition();
     }
 
@@ -38,14 +41,27 @@ public class ClimberSubsystem extends SubsystemBase {
         return ClimberMotor.getOutputCurrent();
     }
 
+    /**
+     * Resets the PID controller for the climber.
+     * Should be called when starting a new climbing action to prevent
+     * integral windup and ensure accurate control from the start.
+     */
     public void resetPID(){
+        climberpid.setPID(
+            SmartDashboard.getNumber("Climber/climb_kP", clim_kP),
+            SmartDashboard.getNumber("Climber/climb_kI", clim_kI),
+            SmartDashboard.getNumber("Climber/climb_kD", clim_kD)
+        );
         climberpid.reset();
     }
-    
-    public void setClimberPos(double target){
-        double output = climberpid.calculate(getclimberpos(),target);
-        setClimberSpeed(output);
 
+    /**
+     * Moves the Climber to a target position using PID control
+     * @param target The target position for the Climber in encoder units
+     */
+    public void setClimberPos(double target){
+        double output = climberpid.calculate(getClimberPos(),target);
+        setClimberSpeed(0);
     }
 
     /**

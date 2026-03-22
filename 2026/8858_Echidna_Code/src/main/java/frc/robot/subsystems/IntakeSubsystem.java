@@ -21,9 +21,9 @@ public class IntakeSubsystem extends SubsystemBase {
 
     /** PID controller for maintaining intake arm position */
     private final PIDController armPIDController;
-    private final double arm_kP = 0.8;
-    private final double arm_kI = 0.0;
-    private final double arm_kD = 0.0;
+    private final double arm_kP = Constants.INTAKE_ARM_KP;
+    private final double arm_kI = Constants.INTAKE_ARM_KI;
+    private final double arm_kD = Constants.INTAKE_ARM_KD;
 
     /**
      * {@link IntakeSubsystem} constructor.
@@ -41,6 +41,11 @@ public class IntakeSubsystem extends SubsystemBase {
      * integral windup and ensure accurate control from the start.
      */
     public void resetPID() {
+        armPIDController.setPID(
+            SmartDashboard.getNumber("Intake/arm_kP", arm_kP),
+            SmartDashboard.getNumber("Intake/arm_kI", arm_kI),
+            SmartDashboard.getNumber("Intake/arm_kD", arm_kD)
+        );
         armPIDController.reset();
     }
 

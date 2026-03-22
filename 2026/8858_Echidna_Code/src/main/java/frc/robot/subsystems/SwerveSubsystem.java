@@ -152,6 +152,7 @@ public class SwerveSubsystem extends SubsystemBase {
               Inches.of(12.75).in(Meters),
               new Rotation3d(0, Degrees.of(21).in(Radians), Degrees.of(180).in(Radians))))
           // new Rotation3d(0, 21, 180)))
+          // .withImuMode(ImuMode.ExternalImu)
           .withImuMode(ImuMode.InternalImuMT1Assist)
           .withImuAssistAlpha(0.01)
           .save();
@@ -452,6 +453,18 @@ public class SwerveSubsystem extends SubsystemBase {
   public Command driveBackwards() {
     return run(() -> {
       swerveDrive.drive(new Translation2d(-1, 0), 0, false, false);
+    }).finallyDo(() -> swerveDrive.drive(new Translation2d(0, 0), 0, false, false));
+  }
+
+  public Command driveLeft() {
+    return run(() -> {
+      swerveDrive.drive(new Translation2d(0, -1), 0, false, false);
+    }).finallyDo(() -> swerveDrive.drive(new Translation2d(0, 0), 0, false, false));
+  }
+
+  public Command driveRight() {
+    return run(() -> {
+      swerveDrive.drive(new Translation2d(0, 1), 0, false, false);
     }).finallyDo(() -> swerveDrive.drive(new Translation2d(0, 0), 0, false, false));
   }
 

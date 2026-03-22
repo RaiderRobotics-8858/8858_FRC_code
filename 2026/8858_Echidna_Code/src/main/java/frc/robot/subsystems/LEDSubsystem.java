@@ -44,9 +44,9 @@ public class LEDSubsystem extends SubsystemBase {
      */
     public Command defaultCommand() {
         if(SmartDashboard.getBoolean("Launcher/TurretZeroedFlag", false)) {
-            return rainbow();
-        } else {
             return allianceLarson();
+        } else {
+            return rainbow();
         }
     }
 

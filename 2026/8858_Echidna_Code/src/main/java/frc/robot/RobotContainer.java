@@ -10,6 +10,8 @@ import java.io.File;
 import com.pathplanner.lib.auto.AutoBuilder;
 
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Pose3d;
+
 import static edu.wpi.first.units.Units.Inches;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -28,6 +30,7 @@ import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.LEDSubsystem;
 import frc.robot.subsystems.LauncherSubsystem;
 import frc.robot.subsystems.SwerveSubsystem;
+import frc.robot.util.HubTimer;
 import frc.robot.subsystems.ClimberSubsystem;
 import swervelib.SwerveDrive;
 
@@ -89,10 +92,11 @@ public class RobotContainer {
         // Add a simple auto option to have the robot drive forward for 1 second then
         // stop
         autoChooser.addOption("Drive Forward",
-        new SequentialCommandGroup(
-            drive.driveBackwards().withTimeout(2),
-            new launchCommand(launcherSubsystem, hopperSubsystem, intakeSubsystem)
-        )
+            new SequentialCommandGroup(
+                drive.driveBackwards().withTimeout(2),
+                new launchCommand(launcherSubsystem, hopperSubsystem, intakeSubsystem, ledSubsystem),
+                drive.driveRight().withTimeout(2)
+            )
         );
 
         // Add each auto name returned by PathPlanner's AutoBuilder as an option
@@ -200,12 +204,13 @@ public class RobotContainer {
     public void periodic() {
         // Launcher stats
         SmartDashboard.putNumber("Launcher/LaunchSpeed", launcherSubsystem.getLaunchSpeed());
-        SmartDashboard.putNumber("Launcher/TurretAngle", launcherSubsystem.getTurretAngle());
+        SmartDashboard.putNumber("Launcher/TurretAngle", launcherSubsystem.getTurretAngleDegrees());
         SmartDashboard.putNumber("Launcher/KickerCurrent", launcherSubsystem.getKickerCurrent());
         SmartDashboard.putNumber("Launcher/KickerVelo", launcherSubsystem.getKikckerVelocity());
         SmartDashboard.putNumber("Launcher/LauncherCurrent", launcherSubsystem.getLauncherCurrent());
         SmartDashboard.putBoolean("Launcher/TurretZero", launcherSubsystem.getTurretZeroOutput());
         SmartDashboard.putBoolean("Launcher/LaunchSense", launcherSubsystem.getLaunchOutput());
+
 
         // Intake stats
         SmartDashboard.putNumber("Intake/ArmPosition", intakeSubsystem.getIntakeArmPosition());
@@ -217,6 +222,15 @@ public class RobotContainer {
         SmartDashboard.putNumber("Roller Temp", intakeSubsystem.getRollerTemp());
 
         SmartDashboard.putNumber("Intake/HopperCurrent", hopperSubsystem.getCurrent());
-        SmartDashboard.putNumber("Climb/Position", climberSubsystem.getclimberpos());
+        SmartDashboard.putNumber("Climb/Position", climberSubsystem.getClimberPos());
+
+        //Hub Values
+        SmartDashboard.putBoolean("Game/Hub Active", HubTimer.isActive());
+        SmartDashboard.putNumber("Game/Match Time", DriverStation.getMatchTime());
+
+        Pose3d pose = drive.getPose3d();
+        SmartDashboard.putNumber("Robot/pos x", pose.getX());
+        SmartDashboard.putNumber("Robot/pos y", pose.getY());
+        SmartDashboard.putNumber("Robot/rotation", pose.getRotation().getAngle());
     }
 }

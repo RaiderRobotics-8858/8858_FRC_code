@@ -65,6 +65,8 @@ public class Robot extends LoggedRobot {
     Logger.start();
 
     robotContainer = new RobotContainer();
+
+    // Publish SmartDashboard values used for tuning.
     SmartDashboard.putNumber("configlaunch", 0);
     SmartDashboard.putNumber("Launcher/ManualMotorSpeed", 0);
     SmartDashboard.putNumber("Intake/IntakeRoller", 0); 
@@ -74,6 +76,15 @@ public class Robot extends LoggedRobot {
     SmartDashboard.putNumber("Launcher/launch_kI", Constants.LAUNCH_KI);
     SmartDashboard.putNumber("Launcher/launch_kD", Constants.LAUNCH_KD);
     SmartDashboard.putNumber("Launcher/launch_ff", Constants.LAUNCH_FF);
+    SmartDashboard.putNumber("Launcher/angle_kP", Constants.TURRET_ANGLE_KP);
+    SmartDashboard.putNumber("Launcher/angle_kI", Constants.TURRET_ANGLE_KI);
+    SmartDashboard.putNumber("Launcher/angle_kD", Constants.TURRET_ANGLE_KD);
+    SmartDashboard.putNumber("Intake/arm_kP", Constants.INTAKE_ARM_KP);
+    SmartDashboard.putNumber("Intake/arm_kI", Constants.INTAKE_ARM_KI);
+    SmartDashboard.putNumber("Intake/arm_kD", Constants.INTAKE_ARM_KD);
+    SmartDashboard.putNumber("Climber/climb_kP", Constants.CLIMBER_KP);
+    SmartDashboard.putNumber("Climber/climb_kI", Constants.CLIMBER_KI);
+    SmartDashboard.putNumber("Climber/climb_kD", Constants.CLIMBER_KD);
     SmartDashboard.putBoolean("Launcher/TurretZeroedFlag", false);
     SmartDashboard.putNumber("Launcher/AngleAdjust", 0);
   }
