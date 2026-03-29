@@ -100,7 +100,6 @@ public class DriverControls {
                 new launchCommand(
                     launcherSubsystem,
                     hopperSubsystem,
-                    intakeSubsystem,
                     ledSubsystem
                 )
             );
@@ -127,10 +126,9 @@ public class DriverControls {
                     new setclimberpos(climberSubsystem, 0),
                     new activateIntake(
                         intakeSubsystem,
-                        hopperSubsystem,
                         Constants.INTAKE_ARM_RAISED, 
-                        0, 
-                        0)
+                        0
+                    )
                  )
             );
 
@@ -140,21 +138,24 @@ public class DriverControls {
                     new setclimberpos(climberSubsystem, Constants.CLIMB_EXTENDED_POS),
                     new activateIntake(
                         intakeSubsystem,
-                        hopperSubsystem,
                         Constants.INTAKE_ARM_RAISED, 
-                        0, 
-                        0)
+                        0
+                    )
                  )
             );
 
             // Oil Spill Mode for Intake and Hopper
             controller.back().whileTrue(
-                new activateIntake(
-                    intakeSubsystem,
-                    hopperSubsystem,
-                    Constants.INTAKE_ARM_LOWERED,
-                    -Constants.INTAKE_ROLLER_SPEED,
-                    -Constants.HOPPER_ROLLER_SPEED
+                new ParallelCommandGroup(
+                    new activateIntake(
+                        intakeSubsystem,
+                        Constants.INTAKE_ARM_LOWERED,
+                        -Constants.INTAKE_ROLLER_SPEED
+                    ),
+                    new moveHopper(
+                        hopperSubsystem, 
+                        -Constants.HOPPER_ROLLER_SPEED
+                        )
                 )
             );
 
@@ -162,10 +163,8 @@ public class DriverControls {
             controller.leftTrigger(0.6).whileFalse(
                 new activateIntake(
                     intakeSubsystem,
-                    hopperSubsystem,
                     Constants.INTAKE_ARM_LOWERED,
-                    Constants.INTAKE_ROLLER_SPEED,
-                    0
+                    Constants.INTAKE_ROLLER_SPEED
                 )
             );
 
@@ -173,21 +172,8 @@ public class DriverControls {
             controller.leftTrigger(0.6).whileTrue(
                 new activateIntake(
                     intakeSubsystem,
-                    hopperSubsystem,
                     Constants.INTAKE_ARM_RAISED,
-                    Constants.INTAKE_ROLLER_SPEED,
-                    Constants.HOPPER_ROLLER_SPEED
-                )
-            );
-
-            // Fixes jams by reversing the hopper rollers
-            controller.x().whileTrue(
-                new activateIntake(
-                    intakeSubsystem,
-                    hopperSubsystem,
-                    Constants.INTAKE_ARM_LOWERED,
-                    Constants.INTAKE_ROLLER_SPEED,
-                    -Constants.HOPPER_ROLLER_SPEED
+                    0
                 )
             );
 

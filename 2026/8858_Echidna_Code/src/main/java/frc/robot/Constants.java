@@ -50,7 +50,7 @@ public class Constants {
     public static final double MAX_SPEED = Units.feetToMeters(30);
 
     // Launch subsystem Constants
-    public static final double TURRET_ANGLE_KP = 0.01;
+    public static final double TURRET_ANGLE_KP = 0.02;
     public static final double TURRET_ANGLE_KI = 0.01;
     public static final double TURRET_ANGLE_KD = 0;
     public static final double LAUNCH_KP = 0.2;
@@ -59,6 +59,7 @@ public class Constants {
     public static final double LAUNCH_FF = 0.2;
     public static final double KICKER_SPEED = 1.0; // Speed at which the kicker motor should run when activated
     public static final double LAUNCH_THRESHOLD = 0.5; // Threshold for launch speed
+    public static final double TURRET_MAX_SPEED = 0.5; // Max speed the turret can rotate
     public static final double TURRET_ANGLE_THRESHOLD = 5; // Threshold for turret angle (degrees)
     public static final double TURRET_RIGHT_90DEG = -9.95; // Encoder setting to turn turret 90 degrees to the right
     public static final double TURRET_LEFT_90DEG = 9.98; // Encoder setting to turn turret 90 degrees to the left
@@ -71,8 +72,8 @@ public class Constants {
     public static final double TURRET_CENTER = 0.0; // Center position for turret angle (degrees)
 
     // Intake susbystems constants
-    public static final double INTAKE_ARM_KP = 0.8;
-    public static final double INTAKE_ARM_KI = 0;
+    public static final double INTAKE_ARM_KP = 1.2;
+    public static final double INTAKE_ARM_KI = 0.1;
     public static final double INTAKE_ARM_KD = 0;
     public static final double INTAKE_ARM_LOWERED = 0.82;
     public static final double INTAKE_ARM_HALF_RAISED = 0.60;

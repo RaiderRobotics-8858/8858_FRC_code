@@ -94,7 +94,7 @@ public class RobotContainer {
         autoChooser.addOption("Drive Forward",
             new SequentialCommandGroup(
                 drive.driveBackwards().withTimeout(2),
-                new launchCommand(launcherSubsystem, hopperSubsystem, intakeSubsystem, ledSubsystem),
+                new launchCommand(launcherSubsystem, hopperSubsystem, ledSubsystem),
                 drive.driveRight().withTimeout(2)
             )
         );
@@ -205,8 +205,9 @@ public class RobotContainer {
         // Launcher stats
         SmartDashboard.putNumber("Launcher/LaunchSpeed", launcherSubsystem.getLaunchSpeed());
         SmartDashboard.putNumber("Launcher/TurretAngle", launcherSubsystem.getTurretAngleDegrees());
+        SmartDashboard.putNumber("Launcher/Turret Encoder", launcherSubsystem.getTurretAngle());
         SmartDashboard.putNumber("Launcher/KickerCurrent", launcherSubsystem.getKickerCurrent());
-        SmartDashboard.putNumber("Launcher/KickerVelo", launcherSubsystem.getKikckerVelocity());
+        SmartDashboard.putNumber("Launcher/KickerVelo", launcherSubsystem.getKickerVelocity());
         SmartDashboard.putNumber("Launcher/LauncherCurrent", launcherSubsystem.getLauncherCurrent());
         SmartDashboard.putBoolean("Launcher/TurretZero", launcherSubsystem.getTurretZeroOutput());
         SmartDashboard.putBoolean("Launcher/LaunchSense", launcherSubsystem.getLaunchOutput());
