@@ -23,6 +23,7 @@ import java.util.function.Supplier;
 /**
  * Constructor for the LauncherSubsystem. Primary function is to control the flywheel launch motor,
  * the turret rotation motor, and the kicker motor that feeds game pieces into the launcher.
+ * There's cake at the end of this file
  *
  * @param robotPoseSupplier A Supplier that provides the current Pose2d of the robot when called.
  * This is used to calculate the turret angle and launcher velocity needed to aim at targets on the field.
@@ -263,13 +264,14 @@ public class LauncherSubsystem extends SubsystemBase {
     public void setTurretAngle(double targetAngle) {
         targetAngle = targetAngle + SmartDashboard.getNumber("Launcher/AngleAdjust", 0);
         // Clamp target angle (degrees) to within turret limits to prevent damage to turret
+        SmartDashboard.putNumber("Launcher/TurretTarget", targetAngle);
         if(targetAngle > Constants.TURRET_LEFT_LIMIT_DEG || targetAngle < Constants.TURRET_RIGHT_LIMIT_DEG){
             targetAngle = 0.0;
         }
         double angleSpeed = anglePIDController.calculate(getTurretAngleDegrees(), targetAngle);
+        angleSpeed = MathUtil.clamp(angleSpeed, -Constants.TURRET_MAX_SPEED, Constants.TURRET_MAX_SPEED);
         SmartDashboard.putBoolean("Launcher/Turret_At_Position", isAtTargetAngle(targetAngle));
         SmartDashboard.putNumber("Launcher/TurretPosition", getTurretAngleDegrees());
-        SmartDashboard.putNumber("Launcher/TurretTarget", targetAngle);
         turretAngle.set(angleSpeed);
     }
 
@@ -306,51 +308,49 @@ public class LauncherSubsystem extends SubsystemBase {
     public AimPoints findTarget() {
         Pose2d robotpositionPose2d = getRobotPose();
         Alliance alliance = DriverStation.getAlliance().orElse(Alliance.Blue);
-        if (alliance==Alliance.Blue){
-            if(robotpositionPose2d.getX()<4.5){
+        if (alliance == Alliance.Blue){
+            if(robotpositionPose2d.getX() < 4.5){
                 // If in Blue scoring zone, aim at hub for scoring.
                 aimatTarget(Constants.AimPoints.BLUE_HUB);
-                SmartDashboard.putString("aimtarget","BLUE_HUB");
+                SmartDashboard.putString("aimtarget", "BLUE_HUB");
                 return Constants.AimPoints.BLUE_HUB;
-            } else if (robotpositionPose2d.getX()>4.5){
+            } else if (robotpositionPose2d.getX() > 4.5){
                 setTurretAngle(0);
-                if (robotpositionPose2d.getY()>4.03){
+                if (robotpositionPose2d.getY() > 4.03){
                     // If in right half of midfield, aim at outpost for passing back
                     // aimatTarget(Constants.AimPoints.BLUE_OUTPOST); // TODO undo once midfield targetting is fixed
-                    SmartDashboard.putString("aimtarget","BLUE_OUTPOST");
+                    SmartDashboard.putString("aimtarget", "BLUE_OUTPOST");
                     return Constants.AimPoints.BLUE_OUTPOST;
-                }
-                else if (robotpositionPose2d.getY()<4.03){
+                } else if (robotpositionPose2d.getY() < 4.03){
                     // If in left half of midfield, aim at far side for passing back
                     // aimatTarget(Constants.AimPoints.BLUE_FAR_SIDE); // TODO undo once midfield targetting is fixed
-                    SmartDashboard.putString("aimtarget","BLUE_FAR_SIDE");
+                    SmartDashboard.putString("aimtarget", "BLUE_FAR_SIDE");
                     return Constants.AimPoints.BLUE_FAR_SIDE;
                 }
             }
         }
-        if (alliance==Alliance.Red){
-            if(robotpositionPose2d.getX()>11.9){
+        if (alliance == Alliance.Red){
+            if(robotpositionPose2d.getX() > 11.9){
                 // If in Red scoring zone, aim at hub for scoring.
                 aimatTarget(Constants.AimPoints.RED_HUB);
-                SmartDashboard.putString("aimtarget","RED_HUB");
+                SmartDashboard.putString("aimtarget", "RED_HUB");
                 return Constants.AimPoints.RED_HUB;
-            } else if (robotpositionPose2d.getX()<11.9){
+            } else if (robotpositionPose2d.getX() < 11.9){
                 setTurretAngle(0);
-                if (robotpositionPose2d.getY()<4.03){
+                if (robotpositionPose2d.getY() < 4.03){
                     // If in left half of midfield, aim at outpost for passing back
                     // aimatTarget(Constants.AimPoints.RED_OUTPOST); // TODO undo once midfield targetting is fixed
-                    SmartDashboard.putString("aimtarget","RED_OUTPOST");
+                    SmartDashboard.putString("aimtarget", "RED_OUTPOST");
                     return Constants.AimPoints.RED_OUTPOST;
-                }
-                else if (robotpositionPose2d.getY()>4.03){
+                } else if (robotpositionPose2d.getY() > 4.03){
                     // If in right half of midfield, aim at far side for passing back
                     // aimatTarget(Constants.AimPoints.RED_FAR_SIDE); // TODO undo once midfield targetting is fixed
-                    SmartDashboard.putString("aimtarget","RED_FAR_SIDE");
+                    SmartDashboard.putString("aimtarget", "RED_FAR_SIDE");
                     return Constants.AimPoints.RED_FAR_SIDE;
                 }
             }
         }
-        SmartDashboard.putString("aimtarget","notarget");
+        SmartDashboard.putString("aimtarget", "notarget");
         return null;
     }
 
@@ -359,46 +359,43 @@ public class LauncherSubsystem extends SubsystemBase {
      * @param target The target to aim at
      */
     public void aimatTarget (AimPoints target){
-        SmartDashboard.putString("aimtarget",target.name());
-        Alliance alliance = DriverStation.getAlliance().orElse(Alliance.Blue);
-        double turretAngle;
+        // Aim the turret at the given field target.
+        // The AimPoints enum already contains alliance-specific coordinates, so we
+        // compute the angle-to-target in field coordinates, subtract the robot
+        // heading, normalize to [-180,180], and send that as the turret setpoint
+        // (in degrees, relative to the robot forward direction).
 
-        // get a vector from the robot to the target.
-        Transform2d difference = new Pose2d (
-            target.value.getX(),
-            target.value.getY(),
-            new Rotation2d()
-        ).minus(getRobotPose());
+        SmartDashboard.putString("aimtarget", target.name());
 
-        // use that vector to set a turret angle which points the turret at the target.
-        double radius = Math.sqrt(Math.pow(difference.getX(),2)+Math.pow(difference.getY(),2));
-        SmartDashboard.putNumber("Distance_to_Target", radius);
-        SmartDashboard.putNumber("Launcher/DiffY", difference.getY());
-        SmartDashboard.putNumber("Launcher/DiffX", difference.getX());
-        SmartDashboard.putNumber("Launcher/Arctan",  Math.toDegrees(Math.atan(difference.getX()/difference.getY())));
-        // Get direction on the field to the target in degrees
-        double angle = Math.atan(difference.getY()/difference.getX());
-        angle = Math.toDegrees(angle); // TODO experiment with using this conversion or not, atan seems to sometimes give results in degrees and sometimes in radians for some reason so this may or may not be necessary
+        // vector from robot to target (field coordinates)
+        Translation2d difference = target.value.toTranslation2d()
+        .minus(getRobotPose().getTranslation());
 
-        if (alliance==Alliance.Red) {
-            turretAngle = MathUtil.inputModulus(
-                angle - (.5)*(getRobotPose().getRotation().getDegrees()),
-                -180,
-                180
-            );
-        } else {
-            turretAngle = MathUtil.inputModulus(
-                angle - (0.5)*(getRobotPose().getRotation().getDegrees()) + 180 /* Blue Alliance is 180 degrees rotated from Robot's perspective */,
-                -180,
-                180
-            );
-        }
+        double dx = difference.getX();
+        double dy = difference.getY();
+        double distance = Math.hypot(dx, dy);
+        SmartDashboard.putNumber("Distance_to_Target", distance);
+        SmartDashboard.putNumber("Launcher/DiffY", dy);
+        SmartDashboard.putNumber("Launcher/DiffX", dx);
 
-        setTurretAngle(turretAngle); // try multiplying by 0.5 (or other value)
+        double fieldAngleRad = Math.atan2(dy, dx);
+        double robotHeadingRad = getRobotPose().getRotation().getRadians();
+        double relativeRad = MathUtil.angleModulus(fieldAngleRad - robotHeadingRad);
+        double turretAngleDeg = Math.toDegrees(relativeRad);
+
+        // if (alliance == DriverStation.)
+        turretAngleDeg = MathUtil.inputModulus(turretAngleDeg + 180, -180, 180);
+
+        SmartDashboard.putNumber("Launcher/ComputedTurretAngle", turretAngleDeg);
+
+        // TODO delete this AI generated comment
+        // send to turret controller
+        setTurretAngle(turretAngleDeg * 1.0);
+
     }
 
     /**
-     * Activates the Kicer
+     * Activates the Kicker
      */
     public void activateKicker() {
         kickerMotor.set(Constants.KICKER_SPEED); // Run kicker at predefined speed if at target launch speed and angle
@@ -408,7 +405,7 @@ public class LauncherSubsystem extends SubsystemBase {
      * Gets the Kicker's Velocity in mystery units
      * @return idk
      */
-    public double getKikckerVelocity() {
+    public double getKickerVelocity() {
         return kickerMotor.getEncoder().getVelocity();
     }
 
@@ -472,3 +469,4 @@ public class LauncherSubsystem extends SubsystemBase {
         return turretAngle.getMotorTemperature();
     }
 }
+// the cake was a lie
