@@ -1,0 +1,152 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 7.700699001426534,
+        "y": 6.849158345221112
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 7.6897712905831614,
+        "y": 6.204423405462077
+      },
+      "isLocked": false,
+      "linkedName": "Left Fuel Center AGE"
+    },
+    {
+      "anchor": {
+        "x": 8.438202567760342,
+        "y": 5.44467469879518
+      },
+      "prevControl": {
+        "x": 8.464079885877316,
+        "y": 5.814065620542083
+      },
+      "nextControl": {
+        "x": 8.420407586027578,
+        "y": 5.1906566944942085
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 7.700699001426534,
+        "y": 4.1191012838801715
+      },
+      "prevControl": {
+        "x": 8.20530670470756,
+        "y": 4.274365192582025
+      },
+      "nextControl": {
+        "x": 7.461754249246045,
+        "y": 4.045579821670791
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 6.816614457831325,
+        "y": 5.44467469879518
+      },
+      "prevControl": {
+        "x": 7.297433734939758,
+        "y": 4.668807228915662
+      },
+      "nextControl": {
+        "x": 6.3444152783466885,
+        "y": 6.206632465690846
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 5.975180722891286,
+        "y": 7.400734939759036
+      },
+      "prevControl": {
+        "x": 6.681699754699358,
+        "y": 7.064297305564714
+      },
+      "nextControl": {
+        "x": 5.745698795180443,
+        "y": 7.510012048192771
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 4.390662650602409,
+        "y": 7.400734939759036
+      },
+      "prevControl": {
+        "x": 4.688251808947632,
+        "y": 7.465428235051475
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": "Left Launch AGE"
+    }
+  ],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 1,
+      "rotationDegrees": 56.00824016596372
+    },
+    {
+      "waypointRelativePos": 2.85,
+      "rotationDegrees": 43.38975656459029
+    },
+    {
+      "waypointRelativePos": 4.0,
+      "rotationDegrees": 167.31803853913928
+    }
+  ],
+  "constraintZones": [
+    {
+      "name": "Constraints Zone",
+      "minWaypointRelativePos": 0,
+      "maxWaypointRelativePos": 2.3,
+      "constraints": {
+        "maxVelocity": 1.5,
+        "maxAcceleration": 3.0,
+        "maxAngularVelocity": 540.0,
+        "maxAngularAcceleration": 720.0,
+        "nominalVoltage": 12.0,
+        "unlimited": false
+      }
+    }
+  ],
+  "pointTowardsZones": [],
+  "eventMarkers": [
+    {
+      "name": "",
+      "waypointRelativePos": 0,
+      "endWaypointRelativePos": null,
+      "command": null
+    }
+  ],
+  "globalConstraints": {
+    "maxVelocity": 1.5,
+    "maxAcceleration": 3.0,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 0,
+    "rotation": -171.179620447979
+  },
+  "reversed": false,
+  "folder": "A Paths",
+  "idealStartingState": {
+    "velocity": 2.0,
+    "rotation": 90.1322385262194
+  },
+  "useDefaultConstraints": true
+}

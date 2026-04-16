@@ -71,6 +71,7 @@ Table: Launcher CAN IDs
 |19      |Turret Angle Encoder      |
 |20      |Launch Left Motor         |
 |21      |Launch Right Motor        |
+|22      |Hood Motor                |
 
 Table: Launcher Digital IO IDs
 
@@ -90,8 +91,10 @@ Modifications include:
 
 ### CAD Models
 
-![Front/Side view of Launcher](images/0p75_Kicker.png)
+![Standalone Launcher](images/BirdViewKicker.png)
 
-![Isometric view of Launcher](images/BirdViewKicker.png)
+![Side view of Launcher](images/Launcher%20Side.png)
+
+![Isometric view of Launcher](images/Launcher%20Isometric.png)
 
 <!-- pagebreak -->

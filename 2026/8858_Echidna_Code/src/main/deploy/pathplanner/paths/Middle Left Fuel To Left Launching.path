@@ -1,0 +1,86 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 7.700699001426534,
+        "y": 6.849158345221112
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 7.636005706134096,
+        "y": 5.969329529243937
+      },
+      "isLocked": false,
+      "linkedName": "Left Fuel Center AGE"
+    },
+    {
+      "anchor": {
+        "x": 7.480741797432238,
+        "y": 4.351997146932953
+      },
+      "prevControl": {
+        "x": 7.661776280190858,
+        "y": 4.524410940036401
+      },
+      "nextControl": {
+        "x": 7.2090299572039935,
+        "y": 4.093223965763195
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 6.329201141226819,
+        "y": 5.671740370898717
+      },
+      "prevControl": {
+        "x": 6.386076927095152,
+        "y": 5.216734083952056
+      },
+      "nextControl": {
+        "x": 6.160998573466475,
+        "y": 7.017360912981456
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 4.504850213980028,
+        "y": 7.444336661911555
+      },
+      "prevControl": {
+        "x": 5.837590909090909,
+        "y": 7.632079545454545
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": "Left Trench Start"
+    }
+  ],
+  "rotationTargets": [],
+  "constraintZones": [],
+  "pointTowardsZones": [],
+  "eventMarkers": [],
+  "globalConstraints": {
+    "maxVelocity": 1.5,
+    "maxAcceleration": 3.0,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 0,
+    "rotation": -179.820379165964
+  },
+  "reversed": false,
+  "folder": "Left Paths",
+  "idealStartingState": {
+    "velocity": 0,
+    "rotation": 90.1322385262194
+  },
+  "useDefaultConstraints": true
+}

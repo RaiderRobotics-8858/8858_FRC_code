@@ -23,8 +23,12 @@ public class ClimberSubsystem extends SubsystemBase {
      * {@link ClimberSubsystem} constructor.
      */
     public ClimberSubsystem() {
-        ClimberMotor = new SparkMax(Constants.CAN_CLIMBER_LEFT, MotorType.kBrushless);
+        ClimberMotor = new SparkMax(Constants.CAN_CLIMBER, MotorType.kBrushless);
         climberpid = new PIDController(clim_kP, clim_kI, clim_kD);
+    }
+
+    public void zeroClimber(){
+        ClimberMotor.getEncoder().setPosition(0);
     }
 
     /**
@@ -61,7 +65,7 @@ public class ClimberSubsystem extends SubsystemBase {
      */
     public void setClimberPos(double target){
         double output = climberpid.calculate(getClimberPos(),target);
-        setClimberSpeed(0);
+        setClimberSpeed(output);
     }
 
     /**

@@ -1,0 +1,37 @@
+{
+  "version": "2025.0",
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "path",
+          "data": {
+            "pathName": " Push to Human Player Path"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Human Player to Hub Path"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "launching"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Right Blue Launch to Intake Path"
+          }
+        }
+      ]
+    }
+  },
+  "resetOdom": true,
+  "folder": "Right Test",
+  "choreoAuto": false
+}

@@ -1,6 +1,8 @@
 package frc.robot.subsystems;
 
 import com.revrobotics.spark.SparkLowLevel.MotorType;
+
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 
@@ -23,7 +25,13 @@ public class HopperSubsystem extends SubsystemBase {
      * Returns the current of the Hopper motor in Amps
      */
     public double getCurrent(){
-        return hopperMotor.getOutputCurrent();
+        double current = hopperMotor.getOutputCurrent();
+        if(SmartDashboard.getBoolean("TESTMODE",false)){
+            if(current >= 90){
+                SmartDashboard.putBoolean("Hopper/Overcurrent hopper", false);
+            }
+        }
+        return current;
     }
 
     /**

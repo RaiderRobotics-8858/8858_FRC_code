@@ -9,7 +9,7 @@ $inputFiles = @(
     "subsystem_intake.md", # Intake
     "subsystem_launcher.md", # Launcher
     "subsystem_vision.md", # Vision
-    # "subsystem_climber.md", # Climber
+    "subsystem_climber.md", # Climber
     "subsystem_led.md", # LED
     "appendix.md" # Appendix with CAN IDs, Digital I/O ports, Analog ports, etc.
 )

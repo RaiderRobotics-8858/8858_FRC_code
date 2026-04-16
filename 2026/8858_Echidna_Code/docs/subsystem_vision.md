@@ -27,7 +27,8 @@ Limelight will constantly update pose-estimation when an AprilTag is in view. Ot
 
 ### Autonomous control
 
-Limelight is disabled during autonomous as handshaking with PathPlanner is not reliable in our testing. Instead, we will rely on the NavX gyro and encoders for odometry and path following.
+Limelight is used to give feedback on the robot's position. Pathplanner commands will use this information to update the robot's position on the field and adjust paths accordingly.
+When no AprilTags are invisible, Swerve Odometry will be used to estimate the robot's position on the field.
 
 ## Electrical
 

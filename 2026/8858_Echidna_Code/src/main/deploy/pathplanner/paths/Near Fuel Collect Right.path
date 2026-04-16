@@ -1,0 +1,54 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 5.999099876695437,
+        "y": 0.5739087018544944
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 6.432000742798568,
+        "y": 1.0628284498972196
+      },
+      "isLocked": false,
+      "linkedName": "Before Fuel collect AGE"
+    },
+    {
+      "anchor": {
+        "x": 6.464093711467325,
+        "y": 3.505123304562268
+      },
+      "prevControl": {
+        "x": 6.551515398214312,
+        "y": 2.2265811358875696
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": "Near Right Fuel End"
+    }
+  ],
+  "rotationTargets": [],
+  "constraintZones": [],
+  "pointTowardsZones": [],
+  "eventMarkers": [],
+  "globalConstraints": {
+    "maxVelocity": 1.5,
+    "maxAcceleration": 3.0,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 0,
+    "rotation": -90.0
+  },
+  "reversed": false,
+  "folder": "Right Paths",
+  "idealStartingState": {
+    "velocity": 0,
+    "rotation": -135.0
+  },
+  "useDefaultConstraints": true
+}
