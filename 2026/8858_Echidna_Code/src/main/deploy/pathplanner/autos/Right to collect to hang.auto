@@ -1,0 +1,62 @@
+{
+  "version": "2025.0",
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Start right to fuel"
+          }
+        },
+        {
+          "type": "parallel",
+          "data": {
+            "commands": [
+              {
+                "type": "path",
+                "data": {
+                  "pathName": "Far Fuel Collect Right"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": null
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Far Right Fuel to Trench"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "launching"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Right to Hang"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "hang"
+          }
+        }
+      ]
+    }
+  },
+  "resetOdom": true,
+  "folder": "Right Test",
+  "choreoAuto": false
+}

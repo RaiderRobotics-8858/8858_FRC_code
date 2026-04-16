@@ -1,5 +1,7 @@
 package frc.robot;
 
+import com.pathplanner.lib.config.RobotConfig;
+
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -29,8 +31,8 @@ public class Constants {
     public static final int CAN_TURRET_ANGLE = 19;
     public static final int CAN_LAUNCH_LEFT = 20;
     public static final int CAN_LAUNCH_RIGHT = 21;
-    public static final int CAN_CLIMBER_LEFT = 22;
-    public static final int CAN_CLIMBER_RIGHT = 23;
+    public static final int CAN_HOOD_MOTOR = 22;
+    public static final int CAN_CLIMBER = 23;
 
     // Digital I/O
     public static final int DIO_INTAKE_ABS = 0;
@@ -42,7 +44,8 @@ public class Constants {
 
     public static final double ROBOT_LENGTH = 28;
     public static final double ROBOT_WIDTH = 26;
-
+    public static final double MAX_FUEL = 45;
+    
     // Swerve Constants
     public static final double ROBOT_MASS = Units.lbsToKilograms(120); // 32lbs * kg per pound
     public static final Matter CHASSIS = new Matter(new Translation3d(0, 0, Units.inchesToMeters(8)), ROBOT_MASS);
@@ -53,6 +56,9 @@ public class Constants {
     public static final double TURRET_ANGLE_KP = 0.02;
     public static final double TURRET_ANGLE_KI = 0.01;
     public static final double TURRET_ANGLE_KD = 0;
+    public static final double HOOD_ANGLE_KP = 0.5;
+    public static final double HOOD_ANGLE_KI = 0.3;
+    public static final double HOOD_ANGLE_KD = 0;
     public static final double LAUNCH_KP = 0.2;
     public static final double LAUNCH_KI = 0.7;
     public static final double LAUNCH_KD = 0.0;
@@ -70,20 +76,23 @@ public class Constants {
     public static final double TURRET_RIGHT_LIMIT_DEG = TURRET_RIGHT_LIMIT * TURRET_DEGREES_PER_UNIT; // Right limit for turret angle (degrees)
     public static final double TURRET_LEFT_LIMIT_DEG = TURRET_LEFT_LIMIT * TURRET_DEGREES_PER_UNIT; // Left limit for turret angle (degrees)
     public static final double TURRET_CENTER = 0.0; // Center position for turret angle (degrees)
+    public static final double HOOD_HIGH_LIMIT = 0.274;
+    public static final double HOOD_LOW_LIMIT = 0.800;
 
     // Intake susbystems constants
     public static final double INTAKE_ARM_KP = 1.2;
     public static final double INTAKE_ARM_KI = 0.1;
     public static final double INTAKE_ARM_KD = 0;
-    public static final double INTAKE_ARM_LOWERED = 0.82;
+    public static final double INTAKE_ARM_LOWERED = 0.79;
     public static final double INTAKE_ARM_HALF_RAISED = 0.60;
-    public static final double INTAKE_ARM_RAISED = 0.35;
+    public static final double INTAKE_ARM_RAISED = 0.40;
     public static final double INTAKE_ROLLER_SPEED = 1.0;
     public static final double HOPPER_ROLLER_SPEED = 1.0;
 
     // Climber subsystem constants
-    public static final double CLIMB_EXTENDED_POS = 114.0;
-    public static final double CLIMBER_KP = 0.10;
+    public static final double CLIMB_EXTENDED_POS = 65.0;
+    public static final double CLIMB_LOWER_POS = 30.0;
+    public static final double CLIMBER_KP = 0.2;
     public static final double CLIMBER_KI = 0.6;
     public static final double CLIMBER_KD = 0;
 
@@ -125,4 +134,5 @@ public class Constants {
     public static final double DEADBAND = 0.1;
     public static final double TRANSLATION_SCALE = 0.5;
     public static final double ROTATION_SCALE = 1.0;
+
 }

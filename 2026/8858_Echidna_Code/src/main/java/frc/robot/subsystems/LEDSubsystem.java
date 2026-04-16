@@ -23,13 +23,13 @@ public class LEDSubsystem extends SubsystemBase {
     private final CANBus kCANBus = new CANBus("rio");
     private final CANdle m_candle = new CANdle(Constants.CAN_CANDLE, kCANBus);
 
-    private final RainbowAnimation m_rainbow = new RainbowAnimation(8, 22)
+    private final RainbowAnimation m_rainbow = new RainbowAnimation(0, 42)
         .withSlot(0)
         .withBrightness(1)
         .withDirection(AnimationDirectionValue.Forward)
         .withFrameRate(Hertz.of(100));
 
-    private final LarsonAnimation m_larson_base = new LarsonAnimation(8, 22)
+    private final LarsonAnimation m_larson_base = new LarsonAnimation(0, 42)
         .withSize(8)
         .withFrameRate(Hertz.of(20));
 

@@ -1,0 +1,135 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 4.466034236804564,
+        "y": 0.6386019971469341
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 4.642810932101202,
+        "y": 0.46182530185029824
+      },
+      "isLocked": false,
+      "linkedName": "Right Launch AGE"
+    },
+    {
+      "anchor": {
+        "x": 5.617574893009986,
+        "y": 0.8973751783166914
+      },
+      "prevControl": {
+        "x": 5.385455720288671,
+        "y": 0.8045275092281665
+      },
+      "nextControl": {
+        "x": 6.556068360211051,
+        "y": 1.2727725651971125
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 5.850470756062768,
+        "y": 3.5756776034236806
+      },
+      "prevControl": {
+        "x": 5.39185436835863,
+        "y": 2.4513277496974077
+      },
+      "nextControl": {
+        "x": 6.251569186875892,
+        "y": 4.559015691868759
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 7.23490727532097,
+        "y": 2.993437945791726
+      },
+      "prevControl": {
+        "x": 7.7487391328742765,
+        "y": 3.816308010696062
+      },
+      "nextControl": {
+        "x": 6.511570164694799,
+        "y": 1.835058124807342
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 6.859686162624821,
+        "y": 0.7550499286733237
+      },
+      "prevControl": {
+        "x": 7.325041085575164,
+        "y": 1.2762474423777075
+      },
+      "nextControl": {
+        "x": 6.536219686162624,
+        "y": 0.3927674750356631
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 4.466034236804564,
+        "y": 0.6386019971469341
+      },
+      "prevControl": {
+        "x": 4.653688715985963,
+        "y": 0.8037861260551258
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": "Right Launch AGE"
+    }
+  ],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 1.0660980810234393,
+      "rotationDegrees": -127.15790585700752
+    },
+    {
+      "waypointRelativePos": 1.7270788912579973,
+      "rotationDegrees": -93.94582459193798
+    },
+    {
+      "waypointRelativePos": 2.825159914712142,
+      "rotationDegrees": 96.06446531562102
+    },
+    {
+      "waypointRelativePos": 4.093816631130053,
+      "rotationDegrees": 179.93384441692777
+    }
+  ],
+  "constraintZones": [],
+  "pointTowardsZones": [],
+  "eventMarkers": [],
+  "globalConstraints": {
+    "maxVelocity": 1.5,
+    "maxAcceleration": 3.0,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 0,
+    "rotation": 164.32047587758078
+  },
+  "reversed": false,
+  "folder": "A Paths",
+  "idealStartingState": {
+    "velocity": 0,
+    "rotation": 164.32047587758078
+  },
+  "useDefaultConstraints": true
+}

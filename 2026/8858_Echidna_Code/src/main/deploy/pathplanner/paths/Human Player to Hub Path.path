@@ -3,29 +3,29 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 1.8163461538461552,
-        "y": 4.05825641025641
+        "x": 0.5456205420827387,
+        "y": 0.6903566333808839
       },
       "prevControl": null,
       "nextControl": {
-        "x": 1.8163461538461552,
-        "y": 4.761268847985186
+        "x": 1.5456205420827387,
+        "y": 0.6903566333808842
       },
       "isLocked": false,
-      "linkedName": null
+      "linkedName": "Human Player Area"
     },
     {
       "anchor": {
-        "x": 1.8163461538461552,
-        "y": 5.360615384615385
+        "x": 1.7359771754636228,
+        "y": 2.9546219686162636
       },
       "prevControl": {
-        "x": 1.8163461538461552,
-        "y": 4.822283944801831
+        "x": 2.175891583452211,
+        "y": 1.2467189728958648
       },
       "nextControl": null,
       "isLocked": false,
-      "linkedName": null
+      "linkedName": "Right Blue Launch Position"
     }
   ],
   "rotationTargets": [],
@@ -34,7 +34,7 @@
   "eventMarkers": [],
   "globalConstraints": {
     "maxVelocity": 1.0,
-    "maxAcceleration": 1.0,
+    "maxAcceleration": 3.0,
     "maxAngularVelocity": 540.0,
     "maxAngularAcceleration": 720.0,
     "nominalVoltage": 12.0,
@@ -42,13 +42,13 @@
   },
   "goalEndState": {
     "velocity": 0,
-    "rotation": 177.70938995736148
+    "rotation": 0.0
   },
   "reversed": false,
-  "folder": null,
+  "folder": "AS Paths",
   "idealStartingState": {
     "velocity": 0,
-    "rotation": 178.66778014613038
+    "rotation": 179.9999999994097
   },
   "useDefaultConstraints": false
 }

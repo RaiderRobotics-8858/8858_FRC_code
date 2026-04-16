@@ -18,6 +18,7 @@ import frc.robot.commands.activateIntake;
 import frc.robot.commands.aimAtTarget;
 import frc.robot.commands.launchCommand;
 import frc.robot.commands.moveClimber;
+import frc.robot.commands.moveHoodtoPos;
 import frc.robot.commands.moveHopper;
 import frc.robot.commands.resetCommand;
 import frc.robot.commands.setclimberpos;
@@ -49,8 +50,8 @@ public class DriverControls {
          */
         SwerveInputStream driveInputStream = SwerveInputStream.of(
             drivetrain.getSwerveDrive(),
-            () -> controller.getLeftY() * 1,
-            () -> controller.getLeftX() * 1
+            () -> controller.getLeftY() * -1,
+            () -> controller.getLeftX() * -1
         )
         .withControllerRotationAxis(() -> controller.getRightX() * -1)
         .robotRelative(false)
@@ -105,43 +106,33 @@ public class DriverControls {
             );
 
             // slowly extend climber
-            controller.rightBumper().whileTrue(
-               new moveClimber(
-                climberSubsystem,
-                .1
-               )
+            controller.povRight().whileTrue(
+                new moveClimber(climberSubsystem, 0.1, false)
             );
 
             // slowly retract climber
-            controller.leftBumper().whileTrue(
-                new moveClimber(
-                  climberSubsystem,
-                  (-.1)
-                )
+            controller.povLeft().whileTrue(
+                new moveClimber(climberSubsystem, -0.1, true)
+            );
+
+            // move the hood down
+            controller.povDown().and(controller.a()).onTrue(
+                new moveHoodtoPos(launcherSubsystem, Constants.HOOD_LOW_LIMIT)
+            );
+
+            // move the hood down
+            controller.povDown().and(controller.b()).onTrue(
+                new moveHoodtoPos(launcherSubsystem, Constants.HOOD_HIGH_LIMIT)
             );
 
             // Lower climber to preset position
-            controller.povLeft().onTrue(
-                 new ParallelCommandGroup(
-                    new setclimberpos(climberSubsystem, 0),
-                    new activateIntake(
-                        intakeSubsystem,
-                        Constants.INTAKE_ARM_RAISED, 
-                        0
-                    )
-                 )
+            controller.leftBumper().onTrue(
+                    new setclimberpos(climberSubsystem, Constants.CLIMB_LOWER_POS)
             );
 
             // Raise climber to preset position
-            controller.povRight().onTrue(
-                new ParallelCommandGroup(
-                    new setclimberpos(climberSubsystem, Constants.CLIMB_EXTENDED_POS),
-                    new activateIntake(
-                        intakeSubsystem,
-                        Constants.INTAKE_ARM_RAISED, 
-                        0
-                    )
-                 )
+            controller.rightBumper().onTrue(
+                    new setclimberpos(climberSubsystem, Constants.CLIMB_EXTENDED_POS)
             );
 
             // Oil Spill Mode for Intake and Hopper
@@ -200,32 +191,6 @@ public class DriverControls {
   public static Command fireFuel(SwerveSubsystem drivetrain /*, Superstructure superstructure */) {
     return Commands.runOnce(() -> {
             SimulatedArena.getInstance();
-
-      /* TODO : Remove superstructure comments when superstructure is implemented
-      GamePieceProjectile fuel = new RebuiltFuelOnFly(
-          drivetrain.getPose().getTranslation(),
-          new Translation2d(
-              superstructure.turret.turretTranslation.getX() * -1,
-              superstructure.turret.turretTranslation.getY()),
-          drivetrain.getSwerveDrive().getRobotVelocity(),
-          drivetrain.getPose().getRotation().rotateBy(superstructure.getAimRotation3d().toRotation2d()),
-          superstructure.turret.turretTranslation.getMeasureZ(),
-
-          // 0.5 times because we're applying spin to the fuel as we shoot it
-          superstructure.getTangentialVelocity().times(0.5),
-          superstructure.getHoodAngle());
-
-      // Configure callbacks to visualize the flight trajectory of the projectile
-      fuel.withProjectileTrajectoryDisplayCallBack(
-          // Callback for when the note will eventually hit the target (if configured)
-          (pose3ds) -> Logger.recordOutput("FieldSimulation/Shooter/ProjectileSuccessfulShot",
-              pose3ds.toArray(Pose3d[]::new)),
-          // Callback for when the note will eventually miss the target, or if no target
-          // is configured
-          (pose3ds) -> Logger.recordOutput("FieldSimulation/Shooter/ProjectileUnsuccessfulShot",
-              pose3ds.toArray(Pose3d[]::new)));
-
-      arena.addGamePieceProjectile(fuel); //*/
     });
   }
 }

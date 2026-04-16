@@ -57,6 +57,13 @@ public class launchCommand extends Command {
             }
         }
 
+        // Adjust hood position based on context of the target
+        if(target == AimPoints.BLUE_HUB || target == AimPoints.RED_HUB){
+            launcherSubsystem.setHoodPosition(Constants.HOOD_HIGH_LIMIT); // Optimal for scoring
+        } else {
+            launcherSubsystem.setHoodPosition(Constants.HOOD_LOW_LIMIT); // Optimal for launching back to zone
+        }
+
         if (hit_speed_flag) {
             hopperSubsystem.setHopperSpeed(SmartDashboard.getNumber("Intake/RollerSpeed", Constants.HOPPER_ROLLER_SPEED));
             launcherSubsystem.activateKicker(); // Feed the kicker only when at target speed and angle
@@ -88,7 +95,7 @@ public class launchCommand extends Command {
     @Override
     public boolean isFinished() {
         double lastfueltime = SmartDashboard.getNumber("Launcher/Time Since Last Fuel", 0);
-        if (lastfueltime - 3 > DriverStation.getMatchTime()){
+        if (lastfueltime - 1 > DriverStation.getMatchTime()){
             SmartDashboard.putNumber("Launcher/Time Since Last Fuel", -1); // reset the flag to not prevent future launches
             return true;
         } else {

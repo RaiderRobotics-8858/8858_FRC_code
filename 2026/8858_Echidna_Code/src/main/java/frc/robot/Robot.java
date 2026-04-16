@@ -78,14 +78,18 @@ public class Robot extends LoggedRobot {
     SmartDashboard.putNumber("Launcher/angle_kP", Constants.TURRET_ANGLE_KP);
     SmartDashboard.putNumber("Launcher/angle_kI", Constants.TURRET_ANGLE_KI);
     SmartDashboard.putNumber("Launcher/angle_kD", Constants.TURRET_ANGLE_KD);
+    SmartDashboard.putNumber("Launcher/hood_kP", Constants.HOOD_ANGLE_KP);
+    SmartDashboard.putNumber("Launcher/hood_kI", Constants.HOOD_ANGLE_KI);
+    SmartDashboard.putNumber("Launcher/hood_kD", Constants.HOOD_ANGLE_KD);
     SmartDashboard.putNumber("Launcher/AngleAdjust", 0);
     SmartDashboard.putNumber("Launcher/Fuel Launched", 0);
     SmartDashboard.putNumber("Launcher/ManualMotorSpeed", 0);
 
+    SmartDashboard.putBoolean("Hopper/Overcurrent hopper", true);
+    SmartDashboard.putBoolean("Intake/Overcurrent Roller", true);
     SmartDashboard.putNumber("Intake/arm_kP", Constants.INTAKE_ARM_KP);
     SmartDashboard.putNumber("Intake/arm_kI", Constants.INTAKE_ARM_KI);
     SmartDashboard.putNumber("Intake/arm_kD", Constants.INTAKE_ARM_KD);
-    SmartDashboard.putNumber("Intake/IntakeRoller", 0);
     SmartDashboard.putNumber("Intake/RollerSpeed", Constants.HOPPER_ROLLER_SPEED);
 
     SmartDashboard.putNumber("Climber/climb_kP", Constants.CLIMBER_KP);

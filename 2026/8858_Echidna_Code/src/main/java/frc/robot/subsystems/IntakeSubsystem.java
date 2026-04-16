@@ -3,6 +3,7 @@ package frc.robot.subsystems;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 
 import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.wpilibj.DutyCycleEncoder;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -18,6 +19,7 @@ public class IntakeSubsystem extends SubsystemBase {
     private final SparkMax rollerMotor;
     private final SparkMax armIntakeMotor;
     private final DutyCycleEncoder armIntakeEncoder;
+    private final SlewRateLimiter intakeRateLimiter; 
 
     /** PID controller for maintaining intake arm position */
     private final PIDController armPIDController;
@@ -33,6 +35,7 @@ public class IntakeSubsystem extends SubsystemBase {
         armIntakeMotor = new SparkMax(Constants.CAN_INTAKE_EXT, MotorType.kBrushless);
         armIntakeEncoder = new DutyCycleEncoder(Constants.DIO_INTAKE_ABS);
         armPIDController = new PIDController(arm_kP, arm_kI, arm_kD);
+        intakeRateLimiter = new SlewRateLimiter(0.6);
     }
 
     /**
@@ -54,12 +57,24 @@ public class IntakeSubsystem extends SubsystemBase {
      * @param speed The speed to set the intake roller motor to, from -1.0 to 1.0
      */
     public void setIntakeSpeed(double speed) {
-        double rollerSpeed = speed;
-        if(SmartDashboard.getBoolean("TESTMODE", false)){
-            rollerSpeed = SmartDashboard.getNumber("Intake/IntakeRoller", 0);
-        }
+        double rollerSpeed = intakeRateLimiter.calculate(speed);
         rollerMotor.set(rollerSpeed);
     }
+
+    /**
+     * Returns the current drawn by the intake roller motor
+     * @return The current drawn by the intake roller motor
+     */
+    public double getIntakeRollerCurrent() {
+        double current = rollerMotor.getOutputCurrent();
+        if(SmartDashboard.getBoolean("TESTMODE", false)){
+            if(current >= 25){
+                SmartDashboard.putBoolean("Intake/Overcurrent Roller", false);
+            }
+        }
+        return current;
+    }
+
 
     /**
      * Returns the current position of the intake arm in encoder units

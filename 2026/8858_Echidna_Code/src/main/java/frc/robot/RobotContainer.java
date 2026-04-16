@@ -8,6 +8,7 @@ package frc.robot;
 import java.io.File;
 
 import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.auto.NamedCommands;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
@@ -23,7 +24,9 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+import frc.robot.commands.activateIntake;
 import frc.robot.commands.launchCommand;
+import frc.robot.commands.setclimberpos;
 import frc.robot.controls.DriverControls;
 import frc.robot.subsystems.HopperSubsystem;
 import frc.robot.subsystems.IntakeSubsystem;
@@ -68,6 +71,33 @@ public class RobotContainer {
         new Trigger(() -> isOnAllianceOutpostSide())
             .onChange(Commands.runOnce(() -> onZoneChanged()).ignoringDisable(true));
 
+        NamedCommands.registerCommand(
+            "launching",
+            new launchCommand(
+                launcherSubsystem,
+                hopperSubsystem,
+                ledSubsystem
+            )
+        );
+
+        NamedCommands.registerCommand(
+            "intakeUp",
+            new activateIntake(
+                intakeSubsystem,
+                Constants.INTAKE_ARM_HALF_RAISED,
+                0
+            )
+        );
+
+        NamedCommands.registerCommand(
+            "intake",
+            new activateIntake(
+                intakeSubsystem,
+                Constants.INTAKE_ARM_LOWERED,
+                Constants.INTAKE_ROLLER_SPEED
+            )
+        );
+
         if (!Robot.isReal() || true) {
         DriverStation.silenceJoystickConnectionWarning(true);
         }
@@ -98,21 +128,6 @@ public class RobotContainer {
                 drive.driveRight().withTimeout(2)
             )
         );
-
-        // Add each auto name returned by PathPlanner's AutoBuilder as an option
-        // AutoBuilder.getAllAutoNames() may return a collection/array of names.
-        try {
-            for (Object nameObj : AutoBuilder.getAllAutoNames()) {
-                String name = String.valueOf(nameObj);
-                try {
-                    autoChooser.addOption(name, drive.getAutonomousCommand(name));
-                } catch (Exception e) {
-                    DriverStation.reportWarning("Failed to create auto command for '" + name + "': " + e.toString(), false);
-                }
-            }
-        } catch (Exception e) {
-            DriverStation.reportWarning("Failed to list autos from AutoBuilder: " + e.toString(), false);
-        }
 
         // Put the autoChooser on the SmartDashboard
         SmartDashboard.putData("Auto Chooser", autoChooser);
@@ -211,9 +226,11 @@ public class RobotContainer {
         SmartDashboard.putNumber("Launcher/LauncherCurrent", launcherSubsystem.getLauncherCurrent());
         SmartDashboard.putBoolean("Launcher/TurretZero", launcherSubsystem.getTurretZeroOutput());
         SmartDashboard.putBoolean("Launcher/LaunchSense", launcherSubsystem.getLaunchOutput());
+        SmartDashboard.putNumber("Launcher/hoodPos", launcherSubsystem.getHoodPos());
 
 
         // Intake stats
+        SmartDashboard.putNumber("Intake/RollerCurrent", intakeSubsystem.getIntakeRollerCurrent());
         SmartDashboard.putNumber("Intake/ArmPosition", intakeSubsystem.getIntakeArmPosition());
         SmartDashboard.putNumber("Launcher Temp", launcherSubsystem.getLauncherTemp());
         SmartDashboard.putNumber("KickerTemp", launcherSubsystem.getKickerTemp());

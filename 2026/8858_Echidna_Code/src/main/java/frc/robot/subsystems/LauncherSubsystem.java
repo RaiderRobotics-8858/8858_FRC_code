@@ -32,6 +32,7 @@ public class LauncherSubsystem extends SubsystemBase {
     private final SparkMax launchMotor; // Motor controller for the flywheel that launches the game pieces
     private final SparkMax kickerMotor; // Motor controller for the mechanism that feeds game pieces into the launcher
     private final SparkMax turretAngle; // Motor controller for the turret's rotation
+    private final SparkMax hoodMotor; // Motor controller for the hood shooting straight(if applicable)
     private final DigitalInput turretAngleZero, launchOutput;
 
     /**
@@ -52,6 +53,12 @@ public class LauncherSubsystem extends SubsystemBase {
     private final double angle_kI = Constants.TURRET_ANGLE_KI;
     private final double angle_kD = Constants.TURRET_ANGLE_KD;
 
+    /** PID controller for maintaining hood angle */
+    private final PIDController hoodPIDController;
+    private final double hood_kP = Constants.HOOD_ANGLE_KP;
+    private final double hood_kI = Constants.HOOD_ANGLE_KI;
+    private final double hood_kD = Constants.HOOD_ANGLE_KD;
+
     private final TreeMap<Double, Double> distanceToSpeed = new TreeMap<>();
 
     /**
@@ -62,11 +69,13 @@ public class LauncherSubsystem extends SubsystemBase {
         // CAN_LAUNCH_LEFT is the primary launch motor, CAN_LAUNCH_RIGHT is set to follow but inverted
         launchMotor = new SparkMax(Constants.CAN_LAUNCH_LEFT, MotorType.kBrushless);
         kickerMotor = new SparkMax(Constants.CAN_KICKER_MOTOR, MotorType.kBrushless);
+        hoodMotor = new SparkMax(Constants.CAN_HOOD_MOTOR, MotorType.kBrushless);
         turretAngle = new SparkMax(Constants.CAN_TURRET_ANGLE, MotorType.kBrushless);
         turretAngleZero = new DigitalInput(Constants.DIO_TURRET_RING);
         launchOutput = new DigitalInput(Constants.DIO_TURRET_OUTPUT);
         LaunchPIDController = new PIDController(launch_kP, launch_kI, launch_kD);
         anglePIDController = new PIDController(angle_kP, angle_kI, angle_kD);
+        hoodPIDController = new PIDController(hood_kP, hood_kI, hood_kD);
         initMap();
     }
 
@@ -75,13 +84,14 @@ public class LauncherSubsystem extends SubsystemBase {
      */
     private void initMap() {
         distanceToSpeed.put(1.75, 2.06);
-        distanceToSpeed.put(2.0, 2.16);
+        distanceToSpeed.put(2.0, 2.11);
         distanceToSpeed.put(2.5, 2.24);
         distanceToSpeed.put(3.0, 2.31);
-        distanceToSpeed.put(3.5, 2.6);
-        distanceToSpeed.put(4.0, 2.91);
+        distanceToSpeed.put(3.5, 2.52);
+        distanceToSpeed.put(4.0, 2.68);
+        distanceToSpeed.put(4.5, 3.05);
         distanceToSpeed.put(4.9, 3.2);
-        distanceToSpeed.put(5.2, 3.5);
+        distanceToSpeed.put(5.5, 4.0);
     }
 
     public Pose2d getRobotPose() {
@@ -130,8 +140,15 @@ public class LauncherSubsystem extends SubsystemBase {
             SmartDashboard.getNumber("Launcher/angle_kI", angle_kI),
             SmartDashboard.getNumber("Launcher/angle_kD", angle_kD)
         );
+
+        hoodPIDController.setPID(
+            SmartDashboard.getNumber("Launcher/hood_kP", hood_kP),
+            SmartDashboard.getNumber("Launcher/hood_kI", hood_kI),
+            SmartDashboard.getNumber("Launcher/hood_kD", hood_kD)
+        );
         LaunchPIDController.reset();
         anglePIDController.reset();
+        hoodPIDController.reset();
     }
 
     /**
@@ -183,6 +200,19 @@ public class LauncherSubsystem extends SubsystemBase {
      */
     public double getLaunchSpeed() {
         return launchMotor.getEncoder().getVelocity();
+    }
+
+    public void setHoodSpeed(double speed){
+        hoodMotor.set(speed);
+    }
+
+    public void setHoodPosition(double target){
+        double speed = hoodPIDController.calculate(getHoodPos(), target);
+        setHoodSpeed(speed);
+    }
+
+    public double getHoodPos(){
+        return hoodMotor.getAbsoluteEncoder().getPosition();
     }
 
     /**
@@ -318,13 +348,13 @@ public class LauncherSubsystem extends SubsystemBase {
                 setTurretAngle(0);
                 if (robotpositionPose2d.getY() > 4.03){
                     // If in right half of midfield, aim at outpost for passing back
-                    // aimatTarget(Constants.AimPoints.BLUE_OUTPOST); // TODO undo once midfield targetting is fixed
-                    SmartDashboard.putString("aimtarget", "BLUE_OUTPOST");
+                    aimatTarget(Constants.AimPoints.BLUE_FAR_SIDE); // TODO undo once midfield targetting is fixed
+                    SmartDashboard.putString("aimtarget", "BLUE_FAR_SIDE");
                     return Constants.AimPoints.BLUE_OUTPOST;
                 } else if (robotpositionPose2d.getY() < 4.03){
                     // If in left half of midfield, aim at far side for passing back
-                    // aimatTarget(Constants.AimPoints.BLUE_FAR_SIDE); // TODO undo once midfield targetting is fixed
-                    SmartDashboard.putString("aimtarget", "BLUE_FAR_SIDE");
+                    aimatTarget(Constants.AimPoints.BLUE_OUTPOST); // TODO undo once midfield targetting is fixed
+                    SmartDashboard.putString("aimtarget", "BLUE_OUTPOST");
                     return Constants.AimPoints.BLUE_FAR_SIDE;
                 }
             }
@@ -339,13 +369,13 @@ public class LauncherSubsystem extends SubsystemBase {
                 setTurretAngle(0);
                 if (robotpositionPose2d.getY() < 4.03){
                     // If in left half of midfield, aim at outpost for passing back
-                    // aimatTarget(Constants.AimPoints.RED_OUTPOST); // TODO undo once midfield targetting is fixed
-                    SmartDashboard.putString("aimtarget", "RED_OUTPOST");
+                    aimatTarget(Constants.AimPoints.RED_FAR_SIDE); // TODO undo once midfield targetting is fixed
+                    SmartDashboard.putString("aimtarget", "RED_FAR_SIDE");
                     return Constants.AimPoints.RED_OUTPOST;
                 } else if (robotpositionPose2d.getY() > 4.03){
                     // If in right half of midfield, aim at far side for passing back
-                    // aimatTarget(Constants.AimPoints.RED_FAR_SIDE); // TODO undo once midfield targetting is fixed
-                    SmartDashboard.putString("aimtarget", "RED_FAR_SIDE");
+                    aimatTarget(Constants.AimPoints.RED_OUTPOST); // TODO undo once midfield targetting is fixed
+                    SmartDashboard.putString("aimtarget", "RED_OUTPOST");
                     return Constants.AimPoints.RED_FAR_SIDE;
                 }
             }
@@ -384,7 +414,7 @@ public class LauncherSubsystem extends SubsystemBase {
         double turretAngleDeg = Math.toDegrees(relativeRad);
 
         // if (alliance == DriverStation.)
-        turretAngleDeg = MathUtil.inputModulus(turretAngleDeg + 180, -180, 180);
+        turretAngleDeg = MathUtil.inputModulus(turretAngleDeg, -180, 180);
 
         SmartDashboard.putNumber("Launcher/ComputedTurretAngle", turretAngleDeg);
 
@@ -415,9 +445,6 @@ public class LauncherSubsystem extends SubsystemBase {
      */
     public void setKickerSpeed(double speed) {
         double driveSpeed = speed;
-        if(SmartDashboard.getBoolean("TESTMODE", false)){
-            driveSpeed = SmartDashboard.getNumber("Launcher/KickerMotorSpeed", 0);
-        }
         kickerMotor.set(driveSpeed);
     }
 

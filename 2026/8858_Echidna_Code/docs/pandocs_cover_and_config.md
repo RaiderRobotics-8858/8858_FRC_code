@@ -9,7 +9,7 @@ classoption: [titlepage, twoside]
 titlepage-text-color: "7137C8"
 titlepage-rule-color: "7137C8"
 titlepage-rule-height: 2
-titlepage-logo: "../../../images/logos/RR&E_logo.png"
+titlepage-logo: "../../../images/logos/8858_logo.png"
 toc: true
 toc-own-page: true
 numbersections: true
@@ -39,7 +39,7 @@ header-includes: |
       {\titlefont\Huge \@title\par}
       \ifdefined\@subtitle
         \vspace{3em}
-        \includegraphics[width=0.7\textwidth]{\detokenize{../../../images/logos/RR&E_logo.png}}\par
+        \includegraphics[width=0.7\textwidth]{\detokenize{../../../images/logos/8858_logo.png}}\par
         \vspace{3em}
   {\titlefont\Large \@subtitle\par}
     \vspace{1.5em}

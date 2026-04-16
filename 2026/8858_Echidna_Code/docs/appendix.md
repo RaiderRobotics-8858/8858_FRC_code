@@ -35,9 +35,9 @@ Table: [Full CAN IDs](../src/main/java/frc/robot/Constants.java#L11)
 |19                 |Turret Angle Motor       |
 |20                 |Launch Left Motor        |
 |21                 |Launch Right Motor       |
+|22                 |Hood Motor               |
 | **Climb**         |                         |
-|22                 |Climber Left Motor       |
-|23                 |Climber Right Motor      |
+|23                 |Climber Motor            |
 
 ## Digital I/O
 

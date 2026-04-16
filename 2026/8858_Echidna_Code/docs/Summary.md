@@ -9,21 +9,22 @@ Table: Echidna's Measurements & Capabilities
 
 |                   |                                           |
 |-------------------|-------------------------------------------|
-| Width             |                                           |
-| Length            |                                           |
-| Height            |                                           |
-| Weight            | 109 lbs. (without bumpers and battery)    |
-| Hopper Capacity   | 35 fuel                                   |
+| Width             | 33 in (with bumper)                       |
+| Length            | 34 in (with bumper)                       |
+| Height            | 21 in (climber retracted)                 |
+| Weight            | 114 lbs. (without bumpers and battery)    |
+| Hopper Capacity   | 45 fuel                                   |
 | Launch Rate       | 3 fuel per second                         |
 | Scoring Accuracy  | 90% (optimal range is ~3m)                |
+| Climb             | L1                                        |
 
 ## CAD Models
 
-![Isometric of Echidna](images/IsometricEchidna.png)
+![Isometric of Echidna](images/Echidna%20Isometric.png)
 
-![Front view of Echidna](images/FrontEchidna.png)
+![Front view of Echidna](images/Echidna%20Front.png)
 
-![Side view of Echidna](images/SideEchidna.png)
+![Side view of Echidna](images/Echidna%20Side.png)
 
 <!-- pagebreak -->
 
@@ -40,6 +41,6 @@ Control of this robot requires 1 operator.
 * Light modes match *ABXY* colors
 * Special/Test modes for D-Pad
 
-![Xbox Controller Layout](images/Gamepad%20Layout.jpg){width=100% fig-pos=H}
+![Xbox Controller Layout](images/Gamepad%20Layout.png){width=100% fig-pos=H}
 
 <!-- pagebreak -->
