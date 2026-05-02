@@ -1,0 +1,54 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 0.506804564907275,
+        "y": 2.7605420827389446
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 0.5068045649106145,
+        "y": 2.1006704707495056
+      },
+      "isLocked": false,
+      "linkedName": "Right of Tower"
+    },
+    {
+      "anchor": {
+        "x": 0.506804564907275,
+        "y": 0.7032952924328151
+      },
+      "prevControl": {
+        "x": 0.5197432239691027,
+        "y": 1.4278601997015756
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": "Human Player Area"
+    }
+  ],
+  "rotationTargets": [],
+  "constraintZones": [],
+  "pointTowardsZones": [],
+  "eventMarkers": [],
+  "globalConstraints": {
+    "maxVelocity": 1.0,
+    "maxAcceleration": 3.0,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 0,
+    "rotation": 90.0
+  },
+  "reversed": false,
+  "folder": "Middle Path",
+  "idealStartingState": {
+    "velocity": 0,
+    "rotation": 90.0
+  },
+  "useDefaultConstraints": false
+}

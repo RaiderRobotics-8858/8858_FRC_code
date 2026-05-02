@@ -21,6 +21,7 @@ import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
@@ -40,7 +41,10 @@ import swervelib.SwerveDrive;
 public class RobotContainer {
 
     private final SwerveSubsystem drive = new SwerveSubsystem(new File(Filesystem.getDeployDirectory(), "swerve/neo"));
-    private final LauncherSubsystem launcherSubsystem = new LauncherSubsystem(drive::getPose);
+    private final LauncherSubsystem launcherSubsystem = new LauncherSubsystem(
+        drive::getPose,
+        drive::getRobotVelocity
+    );
     private final HopperSubsystem hopperSubsystem = new HopperSubsystem();
     private final IntakeSubsystem intakeSubsystem = new IntakeSubsystem();
     private final LEDSubsystem ledSubsystem = new LEDSubsystem();
@@ -95,6 +99,22 @@ public class RobotContainer {
                 intakeSubsystem,
                 Constants.INTAKE_ARM_LOWERED,
                 Constants.INTAKE_ROLLER_SPEED
+            )
+        );
+
+        NamedCommands.registerCommand(
+            "climb up",
+            new setclimberpos(
+                climberSubsystem,
+                Constants.CLIMB_EXTENDED_POS
+            )
+        );
+
+        NamedCommands.registerCommand(
+            "hang",
+            new setclimberpos(
+                climberSubsystem,
+                Constants.CLIMB_LOWER_POS
             )
         );
 
@@ -216,6 +236,18 @@ public class RobotContainer {
         System.out.println("Alliance changed to: " + alliance);
     }
 
+    public void disabledPeriodic(){
+        ledSubsystem.setTwinkle();
+    }
+
+    public void autonomousPeriodic(){
+        // ledSubsystem.setRainbow();
+    }
+
+    public void teleopPeriodic(){
+        ledSubsystem.setAllinceLarsonColor();
+    }
+
     public void periodic() {
         // Launcher stats
         SmartDashboard.putNumber("Launcher/LaunchSpeed", launcherSubsystem.getLaunchSpeed());
@@ -250,5 +282,7 @@ public class RobotContainer {
         SmartDashboard.putNumber("Robot/pos x", pose.getX());
         SmartDashboard.putNumber("Robot/pos y", pose.getY());
         SmartDashboard.putNumber("Robot/rotation", pose.getRotation().getAngle());
+
+        SmartDashboard.putData("CommandScheduler", CommandScheduler.getInstance());
     }
 }

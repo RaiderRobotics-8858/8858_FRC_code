@@ -29,7 +29,7 @@ public class HubTimer {
     public static boolean isActive() {
         Optional<Alliance> alliance = DriverStation.getAlliance();
         if (alliance.isEmpty()) // no DS or FMS connected
-            return false;
+            return true;
         if (DriverStation.isAutonomousEnabled()) // short-circuit for auton
             return true;
 
@@ -38,7 +38,7 @@ public class HubTimer {
         Alliance firstShift = Alliance.Blue; // which alliance is active in shift 1
 
         if (gameData.isEmpty()) {
-            return false;
+            return true;
         } else if (gameData.charAt(0) == 'R') { // red scored more, blue goes first
             firstShift = Alliance.Blue;
         } else if (gameData.charAt(0) == 'B') { // blue scored more, red goes first
@@ -62,9 +62,91 @@ public class HubTimer {
         else // end game
             return true;
     }
+    /**
+     * returns true if your alliance's hub is active
+     * 
+     * @return
+     */
+    public static boolean isActive2sEarly() {
+        Optional<Alliance> alliance = DriverStation.getAlliance();
+        if (alliance.isEmpty()) // no DS or FMS connected
+            return true;
+        if (DriverStation.isAutonomousEnabled()) // short-circuit for auton
+            return true;
+
+        double matchTime = DriverStation.getMatchTime(); // seconds remaining in match period
+        String gameData = DriverStation.getGameSpecificMessage(); // "R", "B" or ""
+        Alliance firstShift = Alliance.Blue; // which alliance is active in shift 1
+
+        if (gameData.isEmpty()) {
+            return true;
+        } else if (gameData.charAt(0) == 'R') { // red scored more, blue goes first
+            firstShift = Alliance.Blue;
+        } else if (gameData.charAt(0) == 'B') { // blue scored more, red goes first
+            firstShift = Alliance.Red;
+        } else {
+            return true;
+        }
+        if (matchTime == -1)
+            return true;
+        
+        if (matchTime > time(2, 10)) // transition shift
+            return true;
+        else if (matchTime > time(1, 47)) // shift 1
+            return alliance.get() == firstShift;
+        else if (matchTime > time(1, 22)) // shift 2
+            return alliance.get() != firstShift;
+        else if (matchTime > time(0, 57)) // shift 3
+            return alliance.get() == firstShift;
+        else if (matchTime > time(0, 32)) // shift 4
+            return alliance.get() != firstShift;
+        else // end game
+            return true;
+    }
+    /**
+     * returns true if your alliance's hub is active
+     * 
+     * @return
+     */
+    public static boolean isActive5sEarly() {
+        Optional<Alliance> alliance = DriverStation.getAlliance();
+        if (alliance.isEmpty()) // no DS or FMS connected
+            return true;
+        if (DriverStation.isAutonomousEnabled()) // short-circuit for auton
+            return true;
+
+        double matchTime = DriverStation.getMatchTime(); // seconds remaining in match period
+        String gameData = DriverStation.getGameSpecificMessage(); // "R", "B" or ""
+        Alliance firstShift = Alliance.Blue; // which alliance is active in shift 1
+
+        if (gameData.isEmpty()) {
+            return true;
+        } else if (gameData.charAt(0) == 'R') { // red scored more, blue goes first
+            firstShift = Alliance.Blue;
+        } else if (gameData.charAt(0) == 'B') { // blue scored more, red goes first
+            firstShift = Alliance.Red;
+        } else {
+            return true;
+        }
+        if (matchTime == -1)
+            return true;
+        
+        if (matchTime > time(2, 10)) // transition shift
+            return true;
+        else if (matchTime > time(1, 50)) // shift 1
+            return alliance.get() == firstShift;
+        else if (matchTime > time(1, 20)) // shift 2
+            return alliance.get() != firstShift;
+        else if (matchTime > time(1, 5)) // shift 3
+            return alliance.get() == firstShift;
+        else if (matchTime > time(0, 30)) // shift 4
+            return alliance.get() != firstShift;
+        else // end game
+            return true;
+    }
 
     /** helper method for readability */
-    private static int time(int min, int sec) {
+    public static int time(int min, int sec) {
         return sec + (60 * min);
     }
 }

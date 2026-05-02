@@ -2,16 +2,18 @@ package frc.robot.controls;
 
 import org.ironmaple.simulation.SimulatedArena;
 
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.util.Color;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import java.util.Arrays;
+import java.util.function.DoubleSupplier;
 import com.ctre.phoenix6.signals.RGBWColor;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
-import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants;
 import frc.robot.Robot;
 import frc.robot.commands.activateIntake;
@@ -20,18 +22,19 @@ import frc.robot.commands.launchCommand;
 import frc.robot.commands.moveClimber;
 import frc.robot.commands.moveHoodtoPos;
 import frc.robot.commands.moveHopper;
-import frc.robot.commands.resetCommand;
+import frc.robot.commands.rumbleController;
 import frc.robot.commands.setclimberpos;
 import frc.robot.subsystems.HopperSubsystem;
 import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.LEDSubsystem;
 import frc.robot.subsystems.LauncherSubsystem;
 import frc.robot.subsystems.SwerveSubsystem;
+import frc.robot.util.HubTimer;
 import frc.robot.subsystems.ClimberSubsystem;
 import swervelib.SwerveInputStream;
 
 public class DriverControls {
-
+private static boolean hubActive = false;
     public static void configure(
         int controllerPort,
         SwerveSubsystem drivetrain,
@@ -43,6 +46,81 @@ public class DriverControls {
     ) {
         CommandXboxController controller = new CommandXboxController(controllerPort);
 
+        // Rotates driver translation inputs for alternate POV driving modes.
+        // When enabled, offsets are alliance-based: +90° for Blue, -90° for Red.
+        final boolean[] isAlternatePovEnabled = {false};
+        SmartDashboard.putString(
+            "Driver POV Mode",
+            isAlternatePovEnabled[0] ? "Screen" : "Normal"
+        );
+
+        // Configure the match-time points (seconds remaining) when the sweep should start.
+        final double sweepDurationSeconds = 0.45;
+        final double sweepPeriodSeconds = 1.0;
+        final double sweepGapSeconds = Math.max(0.0, sweepPeriodSeconds - sweepDurationSeconds);
+        final double[] sweepStartTimesSeconds = {
+            HubTimer.time(2, 10),
+            HubTimer.time(1, 45),
+            HubTimer.time(1, 20),
+            HubTimer.time(0, 55),
+            HubTimer.time(0, 30)
+        };
+        final boolean[] sweepTriggered = new boolean[sweepStartTimesSeconds.length];
+
+        new Trigger(() -> DriverStation.isDisabled() && DriverStation.getMatchTime() > 130.0)
+            .onTrue(
+                Commands.runOnce(() -> Arrays.fill(sweepTriggered, false)).ignoringDisable(true)
+            );
+
+        for (int i = 0; i < sweepStartTimesSeconds.length; i++) {
+            final int index = i;
+            new Trigger(() -> HubTimer.isActive2sEarly() && DriverStation.isTeleop())
+                .onTrue(
+                    Commands.runOnce(() -> {
+                        hubActive = true;
+                        sweepTriggered[index] = true;
+                        CommandScheduler.getInstance().schedule(
+                            Commands.repeatingSequence(
+                                new rumbleController(
+                                    controller.getHID(),
+                                    () -> DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue)
+                                            == DriverStation.Alliance.Blue
+                                        ? rumbleController.Pattern.SWEEP_LEFT_TO_RIGHT
+                                        : rumbleController.Pattern.SWEEP_RIGHT_TO_LEFT
+                                ),
+                                Commands.waitSeconds(sweepGapSeconds)
+                            ).withTimeout(5.0)
+                        );
+                    })
+                );
+        }
+
+        DoubleSupplier translationRotationOffset = () -> {
+            if (!isAlternatePovEnabled[0]) {
+                return 0.0;
+            }
+            return DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue)
+                    == DriverStation.Alliance.Blue
+                ? (-Math.PI / 2.0)
+                : (Math.PI / 2.0);
+        };
+        DoubleSupplier rotatedTranslationX = () -> {
+            double x = controller.getLeftX() * -1;
+            double y = controller.getLeftY() * -1;
+            double offset = translationRotationOffset.getAsDouble();
+            double cos = Math.cos(offset);
+            double sin = Math.sin(offset);
+            return (x * cos) - (y * sin);
+        };
+        DoubleSupplier rotatedTranslationY = () -> {
+            double x = controller.getLeftX() * -1;
+            double y = controller.getLeftY() * -1;
+            double offset = translationRotationOffset.getAsDouble();
+            double cos = Math.cos(offset);
+            double sin = Math.sin(offset);
+            return (x * sin) + (y * cos);
+        };
+
         /**
          * Maps Controller inputs to a SwerveInputStream for
          * field-oriented driving with alliance-relative
@@ -50,14 +128,26 @@ public class DriverControls {
          */
         SwerveInputStream driveInputStream = SwerveInputStream.of(
             drivetrain.getSwerveDrive(),
-            () -> controller.getLeftY() * -1,
-            () -> controller.getLeftX() * -1
+            rotatedTranslationY,
+            rotatedTranslationX
         )
         .withControllerRotationAxis(() -> controller.getRightX() * -1)
         .robotRelative(false)
         .allianceRelativeControl(true)
         .scaleTranslation(Constants.TRANSLATION_SCALE)
         .scaleRotation(Constants.ROTATION_SCALE)
+        .deadband(Constants.DEADBAND);
+
+        SwerveInputStream driveInputStreamSlow = SwerveInputStream.of(
+            drivetrain.getSwerveDrive(),
+            rotatedTranslationY,
+            rotatedTranslationX
+        )
+        .withControllerRotationAxis(() -> controller.getRightX() * -1)
+        .robotRelative(false)
+        .allianceRelativeControl(true)
+        .scaleTranslation(Constants.TRANSLATION_SCALE_SLOW)
+        .scaleRotation(Constants.ROTATION_SCALE_SLOW)
         .deadband(Constants.DEADBAND);
 
         drivetrain.setDefaultCommand(
@@ -93,6 +183,32 @@ public class DriverControls {
             );
         } else {
 
+            // Alternate drive mode for viewing field video from the opposite side.
+            // pressing both sticks toggles alliance-based rotation (+90° Blue, -90° Red).
+            controller.leftStick().and(controller.rightStick()).onTrue(
+                Commands.sequence(
+                    Commands.runOnce(() -> {
+                        isAlternatePovEnabled[0] = !isAlternatePovEnabled[0];
+                        SmartDashboard.putString(
+                            "Driver POV Mode",
+                            isAlternatePovEnabled[0] ? "Normal" : "Screen"
+                        );
+                    }),
+                    new rumbleController(
+                        controller.getHID(),
+                        () -> {
+                            if (!isAlternatePovEnabled[0]) {
+                                return rumbleController.Pattern.DOUBLE_BOTH;
+                            }
+                            return DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue)
+                                    == DriverStation.Alliance.Blue
+                                ? rumbleController.Pattern.LEFT
+                                : rumbleController.Pattern.RIGHT;
+                        }
+                    )
+                )
+            );
+
             // Software Reset
             controller.start().onTrue((Commands.runOnce(drivetrain::zeroGyro)));
 
@@ -124,15 +240,31 @@ public class DriverControls {
             controller.povDown().and(controller.b()).onTrue(
                 new moveHoodtoPos(launcherSubsystem, Constants.HOOD_HIGH_LIMIT)
             );
+            // Puts the intake arm all the way up.
+            controller.x().onTrue(
+                new activateIntake(intakeSubsystem,
+                Constants.INTAKE_ARM_RAISED,
+                0)
+            );
 
             // Lower climber to preset position
-            controller.leftBumper().onTrue(
-                    new setclimberpos(climberSubsystem, Constants.CLIMB_LOWER_POS)
+            controller.leftBumper().onFalse(
+                new setclimberpos(climberSubsystem, 0)
+            );
+
+            // Lower climber to preset position
+            controller.rightBumper().onFalse(
+                new setclimberpos(climberSubsystem, Constants.CLIMB_LOWER_POS)
             );
 
             // Raise climber to preset position
-            controller.rightBumper().onTrue(
-                    new setclimberpos(climberSubsystem, Constants.CLIMB_EXTENDED_POS)
+            controller.rightBumper().or(controller.leftBumper()).onTrue(
+                new setclimberpos(climberSubsystem, Constants.CLIMB_EXTENDED_POS)
+            );
+
+            // Field-oriented drive at reduced speed for precision control while the right bumper is held
+            controller.rightBumper().or(controller.rightTrigger(0.6)).whileTrue(
+                drivetrain.driveFieldOriented(driveInputStreamSlow).withName("Drive" + ".test")
             );
 
             // Oil Spill Mode for Intake and Hopper
@@ -144,7 +276,7 @@ public class DriverControls {
                         -Constants.INTAKE_ROLLER_SPEED
                     ),
                     new moveHopper(
-                        hopperSubsystem, 
+                        hopperSubsystem,
                         -Constants.HOPPER_ROLLER_SPEED
                         )
                 )

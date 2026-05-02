@@ -1,0 +1,54 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 4.504850213980028,
+        "y": 7.444336661911555
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 4.794987951807229,
+        "y": 7.488156626506025
+      },
+      "isLocked": false,
+      "linkedName": "Left Trench Start"
+    },
+    {
+      "anchor": {
+        "x": 3.9863373493975898,
+        "y": 7.4553734939759035
+      },
+      "prevControl": {
+        "x": 3.5710843373493972,
+        "y": 7.466301204819277
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": "Left Trench Launch"
+    }
+  ],
+  "rotationTargets": [],
+  "constraintZones": [],
+  "pointTowardsZones": [],
+  "eventMarkers": [],
+  "globalConstraints": {
+    "maxVelocity": 3.0,
+    "maxAcceleration": 3.0,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 0,
+    "rotation": 180.0
+  },
+  "reversed": false,
+  "folder": "PL Paths",
+  "idealStartingState": {
+    "velocity": 0,
+    "rotation": -179.820379165964
+  },
+  "useDefaultConstraints": true
+}

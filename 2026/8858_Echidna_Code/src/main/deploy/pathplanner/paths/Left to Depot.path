@@ -3,24 +3,24 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 4.504850213980028,
-        "y": 7.444336661911555
+        "x": 3.9863373493975898,
+        "y": 7.4553734939759035
       },
       "prevControl": null,
       "nextControl": {
-        "x": 2.7117016029593093,
-        "y": 7.733323057953145
+        "x": 2.1931887383768713,
+        "y": 7.744359890017494
       },
       "isLocked": false,
-      "linkedName": "Left Trench Start"
+      "linkedName": "Left Trench Launch"
     },
     {
       "anchor": {
-        "x": 0.6354500616522811,
+        "x": 0.5456205420827387,
         "y": 5.958277108433736
       },
       "prevControl": {
-        "x": 2.376473489519112,
+        "x": 2.286643969949571,
         "y": 5.451609124537608
       },
       "nextControl": null,
@@ -33,7 +33,7 @@
   "pointTowardsZones": [],
   "eventMarkers": [],
   "globalConstraints": {
-    "maxVelocity": 1.5,
+    "maxVelocity": 3.0,
     "maxAcceleration": 3.0,
     "maxAngularVelocity": 540.0,
     "maxAngularAcceleration": 720.0,
@@ -48,7 +48,7 @@
   "folder": "Left Paths",
   "idealStartingState": {
     "velocity": 0,
-    "rotation": -179.820379165964
+    "rotation": 180.0
   },
   "useDefaultConstraints": true
 }

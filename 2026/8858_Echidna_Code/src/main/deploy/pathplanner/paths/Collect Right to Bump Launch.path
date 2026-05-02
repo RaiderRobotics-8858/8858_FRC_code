@@ -1,0 +1,63 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 7.805006165228114,
+        "y": 3.4186128236744753
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 6.820870185441282,
+        "y": 2.488830242504191
+      },
+      "isLocked": false,
+      "linkedName": "Far Right Fuel End"
+    },
+    {
+      "anchor": {
+        "x": 2.784008559193065,
+        "y": 2.4500142653287273
+      },
+      "prevControl": {
+        "x": 4.000242510690926,
+        "y": 2.7476034236739486
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": "Bump Launch Right"
+    }
+  ],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 0.4817556848228473,
+      "rotationDegrees": -114.86047269990092
+    },
+    {
+      "waypointRelativePos": 0.7609730301427808,
+      "rotationDegrees": -112.17420799482497
+    }
+  ],
+  "constraintZones": [],
+  "pointTowardsZones": [],
+  "eventMarkers": [],
+  "globalConstraints": {
+    "maxVelocity": 3.0,
+    "maxAcceleration": 3.0,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 0,
+    "rotation": 64.17900802524049
+  },
+  "reversed": false,
+  "folder": "Right Paths",
+  "idealStartingState": {
+    "velocity": 0,
+    "rotation": -90.0
+  },
+  "useDefaultConstraints": true
+}

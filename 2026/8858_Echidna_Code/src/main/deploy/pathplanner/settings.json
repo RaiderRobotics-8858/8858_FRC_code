@@ -3,19 +3,23 @@
   "robotLength": 0.886,
   "holonomicMode": true,
   "pathFolders": [
-    "AS Paths",
     "A Paths",
+    "AS Paths",
     "Left Paths",
+    "Middle Path",
+    "PL Paths",
     "Right Paths",
     "Scoring Zone Paths",
     "V Paths"
   ],
   "autoFolders": [
     "Left Test",
-    "Scoring Zone Test",
-    "Right Test"
+    "Middle Test",
+    "PL Auton",
+    "Right Test",
+    "Scoring Zone Test"
   ],
-  "defaultMaxVel": 1.5,
+  "defaultMaxVel": 3.0,
   "defaultMaxAccel": 3.0,
   "defaultMaxAngVel": 540.0,
   "defaultMaxAngAccel": 720.0,

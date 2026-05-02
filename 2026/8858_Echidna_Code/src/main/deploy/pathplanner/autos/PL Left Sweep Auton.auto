@@ -1,0 +1,81 @@
+{
+  "version": "2025.0",
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "path",
+          "data": {
+            "pathName": "PL Left"
+          }
+        },
+        {
+          "type": "race",
+          "data": {
+            "commands": [
+              {
+                "type": "named",
+                "data": {
+                  "name": "launching"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "intakeUp"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "intake"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "PL Left Start To Middle Left Fuel"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Left to Right Sweep"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Right Sweep to Launch"
+          }
+        },
+        {
+          "type": "race",
+          "data": {
+            "commands": [
+              {
+                "type": "named",
+                "data": {
+                  "name": "launching"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "intakeUp"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "resetOdom": true,
+  "folder": "PL Auton",
+  "choreoAuto": false
+}
