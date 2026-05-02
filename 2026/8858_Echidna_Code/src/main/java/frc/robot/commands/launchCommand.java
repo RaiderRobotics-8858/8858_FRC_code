@@ -47,9 +47,8 @@ public class launchCommand extends Command {
     public void execute() {
         AimPoints target = launcherSubsystem.findTarget();
 
-        double targetSpeed = launcherSubsystem.getLaunchSpeed(target);
+        double targetSpeed = launcherSubsystem.getTargetLaunchSpeed(target);
         launcherSubsystem.setLaunchSpeed(targetSpeed); // Set launch motors to maintain target speed
-        ledSubsystem.larsonWithColor(new RGBWColor(Color.kYellow)); // Set LED pattern to indicate launching
 
         if (launcherSubsystem.isAtTargetSpeed(targetSpeed) && !hit_speed_flag) {
             if(!SmartDashboard.getBoolean("TESTMODE", false)){
@@ -65,8 +64,9 @@ public class launchCommand extends Command {
         }
 
         if (hit_speed_flag) {
+            ledSubsystem.setLarsonColor(new RGBWColor(Color.kYellow)); // Set LED pattern to indicate launching
             hopperSubsystem.setHopperSpeed(SmartDashboard.getNumber("Intake/RollerSpeed", Constants.HOPPER_ROLLER_SPEED));
-            launcherSubsystem.activateKicker(); // Feed the kicker only when at target speed and angle
+            launcherSubsystem.activateKicker(target); // Feed the kicker only when at target speed and angle
         } else {
             hopperSubsystem.setHopperSpeed(0);
         }
@@ -90,12 +90,13 @@ public class launchCommand extends Command {
         launcherSubsystem.setTurretSpeed(0); // Stop turret movement when command ends
         launcherSubsystem.setKickerSpeed(0); // Stop kicker movement when command ends
         hopperSubsystem.setHopperSpeed(0);
+        ledSubsystem.setLarsonColor(new RGBWColor(Color.kGreen));
     }
 
     @Override
     public boolean isFinished() {
         double lastfueltime = SmartDashboard.getNumber("Launcher/Time Since Last Fuel", 0);
-        if (lastfueltime - 1 > DriverStation.getMatchTime()){
+        if ((lastfueltime - 1 > DriverStation.getMatchTime()) && DriverStation.isAutonomousEnabled()){
             SmartDashboard.putNumber("Launcher/Time Since Last Fuel", -1); // reset the flag to not prevent future launches
             return true;
         } else {

@@ -1,0 +1,59 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 4.008174157303371,
+        "y": 0.6518164794007486
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 3.055720399429386,
+        "y": 0.6644793152639101
+      },
+      "isLocked": false,
+      "linkedName": "Right Trench Launch"
+    },
+    {
+      "anchor": {
+        "x": 0.5973751783166898,
+        "y": 0.6518164794007486
+      },
+      "prevControl": {
+        "x": 2.4217261055634807,
+        "y": 1.6607560627674751
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": null
+    }
+  ],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 0.4881015335801193,
+      "rotationDegrees": 121.32375085845062
+    }
+  ],
+  "constraintZones": [],
+  "pointTowardsZones": [],
+  "eventMarkers": [],
+  "globalConstraints": {
+    "maxVelocity": 2.0,
+    "maxAcceleration": 3.0,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 0,
+    "rotation": 0.0
+  },
+  "reversed": false,
+  "folder": "Middle Path",
+  "idealStartingState": {
+    "velocity": 0,
+    "rotation": 180.0
+  },
+  "useDefaultConstraints": false
+}

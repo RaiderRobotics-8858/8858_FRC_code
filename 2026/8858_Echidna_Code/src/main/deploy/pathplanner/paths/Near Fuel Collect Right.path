@@ -3,37 +3,56 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 5.999099876695437,
+        "x": 5.428795180722891,
         "y": 0.5739087018544944
       },
       "prevControl": null,
       "nextControl": {
-        "x": 6.432000742798568,
-        "y": 1.0628284498972196
+        "x": 7.493680456490727,
+        "y": 0.5480313837375184
       },
       "isLocked": false,
       "linkedName": "Before Fuel collect AGE"
     },
     {
       "anchor": {
-        "x": 6.464093711467325,
-        "y": 3.505123304562268
+        "x": 7.092582025677602,
+        "y": 3.510984308131241
       },
       "prevControl": {
-        "x": 6.551515398214312,
-        "y": 2.2265811358875696
+        "x": 6.960548239303911,
+        "y": 2.2260950859659783
       },
       "nextControl": null,
       "isLocked": false,
       "linkedName": "Near Right Fuel End"
     }
   ],
-  "rotationTargets": [],
-  "constraintZones": [],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 0.5419087136929445,
+      "rotationDegrees": -89.8000121839833
+    }
+  ],
+  "constraintZones": [
+    {
+      "name": "Constraints Zone",
+      "minWaypointRelativePos": 0.46189839572192726,
+      "maxWaypointRelativePos": 1.0,
+      "constraints": {
+        "maxVelocity": 1.5,
+        "maxAcceleration": 3.0,
+        "maxAngularVelocity": 540.0,
+        "maxAngularAcceleration": 720.0,
+        "nominalVoltage": 12.0,
+        "unlimited": false
+      }
+    }
+  ],
   "pointTowardsZones": [],
   "eventMarkers": [],
   "globalConstraints": {
-    "maxVelocity": 1.5,
+    "maxVelocity": 3.0,
     "maxAcceleration": 3.0,
     "maxAngularVelocity": 540.0,
     "maxAngularAcceleration": 720.0,
@@ -47,8 +66,8 @@
   "reversed": false,
   "folder": "Right Paths",
   "idealStartingState": {
-    "velocity": 0,
-    "rotation": -135.0
+    "velocity": 2.0,
+    "rotation": 178.9190758133394
   },
-  "useDefaultConstraints": true
+  "useDefaultConstraints": false
 }

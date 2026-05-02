@@ -35,7 +35,7 @@ public class IntakeSubsystem extends SubsystemBase {
         armIntakeMotor = new SparkMax(Constants.CAN_INTAKE_EXT, MotorType.kBrushless);
         armIntakeEncoder = new DutyCycleEncoder(Constants.DIO_INTAKE_ABS);
         armPIDController = new PIDController(arm_kP, arm_kI, arm_kD);
-        intakeRateLimiter = new SlewRateLimiter(0.6);
+        intakeRateLimiter = new SlewRateLimiter(1);
     }
 
     /**
@@ -83,6 +83,13 @@ public class IntakeSubsystem extends SubsystemBase {
     public double getIntakeArmPosition() {
         // return armIntakeMotor.getEncoder().getPosition();
         return armIntakeEncoder.get();
+    }
+
+    public boolean armAtTarget(double target){
+        if(Math.abs(getIntakeArmPosition() - target) < 0.1){
+            return true;
+        }
+        return false;
     }
 
     /**

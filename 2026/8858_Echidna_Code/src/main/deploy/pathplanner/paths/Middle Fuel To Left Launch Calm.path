@@ -3,13 +3,13 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 7.700699001426534,
-        "y": 6.849158345221112
+        "x": 7.843,
+        "y": 6.823281027104137
       },
       "prevControl": null,
       "nextControl": {
-        "x": 7.6897712905831614,
-        "y": 6.204423405462077
+        "x": 7.832072289156628,
+        "y": 6.178546087345102
       },
       "isLocked": false,
       "linkedName": "Left Fuel Center AGE"

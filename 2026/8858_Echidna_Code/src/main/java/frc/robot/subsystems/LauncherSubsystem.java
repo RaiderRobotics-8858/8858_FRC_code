@@ -7,8 +7,8 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
@@ -16,6 +16,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import frc.robot.Constants.AimPoints;
+import frc.robot.util.HubTimer;
 
 import java.util.TreeMap;
 import java.util.function.Supplier;
@@ -27,6 +28,7 @@ import java.util.function.Supplier;
  *
  * @param robotPoseSupplier A Supplier that provides the current Pose2d of the robot when called.
  * This is used to calculate the turret angle and launcher velocity needed to aim at targets on the field.
+ * @param robotVelocitySupplier A Supplier that provides the current robot-relative velocity when called.
  */
 public class LauncherSubsystem extends SubsystemBase {
     private final SparkMax launchMotor; // Motor controller for the flywheel that launches the game pieces
@@ -36,10 +38,20 @@ public class LauncherSubsystem extends SubsystemBase {
     private final DigitalInput turretAngleZero, launchOutput;
 
     /**
+     * Indicates when the Turret is at the target angle within a threshold.
+     */
+    private boolean turretAtTarget = false;
+
+    /**
      * Need to know robot pose to calculate turret angle to target,
      * so we take a supplier of the robot pose as a dependency
      */
     private final Supplier<Pose2d> robotPoseSupplier;
+
+    /**
+     * Need robot velocity for motion-compensated launch calculations
+     */
+    private final Supplier<ChassisSpeeds> robotVelocitySupplier;
 
     /** PID controller for maintaining launch speed */
     private final PIDController LaunchPIDController;
@@ -59,13 +71,21 @@ public class LauncherSubsystem extends SubsystemBase {
     private final double hood_kI = Constants.HOOD_ANGLE_KI;
     private final double hood_kD = Constants.HOOD_ANGLE_KD;
 
-    private final TreeMap<Double, Double> distanceToSpeed = new TreeMap<>();
+    private final TreeMap<Double, Double> distanceToSpeedScoring = new TreeMap<>();
+    private final TreeMap<Double, Double> distanceToSpeedYeeting = new TreeMap<>();
+
+    /**
+     * Maps launcher velocity (encoder units) to expected projectile flight time (seconds).
+     * Populate with empirically measured values.
+     */
+    private final TreeMap<Double, Double> velocityToFlightTime = new TreeMap<>();
 
     /**
      * {@link LauncherSubsystem} constructor.
      */
-    public LauncherSubsystem(Supplier<Pose2d> robotPoseSupplier) {
+    public LauncherSubsystem(Supplier<Pose2d> robotPoseSupplier, Supplier<ChassisSpeeds> robotVelocitySupplier) {
         this.robotPoseSupplier = robotPoseSupplier;
+        this.robotVelocitySupplier = robotVelocitySupplier;
         // CAN_LAUNCH_LEFT is the primary launch motor, CAN_LAUNCH_RIGHT is set to follow but inverted
         launchMotor = new SparkMax(Constants.CAN_LAUNCH_LEFT, MotorType.kBrushless);
         kickerMotor = new SparkMax(Constants.CAN_KICKER_MOTOR, MotorType.kBrushless);
@@ -76,26 +96,67 @@ public class LauncherSubsystem extends SubsystemBase {
         LaunchPIDController = new PIDController(launch_kP, launch_kI, launch_kD);
         anglePIDController = new PIDController(angle_kP, angle_kI, angle_kD);
         hoodPIDController = new PIDController(hood_kP, hood_kI, hood_kD);
-        initMap();
+        InitMap();
     }
 
     /**
      * Maps various distances to the corresponding speeds
      */
-    private void initMap() {
-        distanceToSpeed.put(1.75, 2.06);
-        distanceToSpeed.put(2.0, 2.11);
-        distanceToSpeed.put(2.5, 2.24);
-        distanceToSpeed.put(3.0, 2.31);
-        distanceToSpeed.put(3.5, 2.52);
-        distanceToSpeed.put(4.0, 2.68);
-        distanceToSpeed.put(4.5, 3.05);
-        distanceToSpeed.put(4.9, 3.2);
-        distanceToSpeed.put(5.5, 4.0);
+    private void InitMap() {
+        // While hood is up
+        distanceToSpeedScoring.put(1.75, 2.16);
+        distanceToSpeedScoring.put(2.0, 2.21);
+        distanceToSpeedScoring.put(2.5, 2.34);
+        distanceToSpeedScoring.put(3.0, 2.41);
+        distanceToSpeedScoring.put(3.5, 2.62);
+        distanceToSpeedScoring.put(4.0, 2.83);
+        distanceToSpeedScoring.put(4.5, 2.93);
+        distanceToSpeedScoring.put(4.9, 3.04);
+        distanceToSpeedScoring.put(5.0, 3.05);
+        distanceToSpeedScoring.put(5.2, 3.12);
+        distanceToSpeedScoring.put(5.5, 3.21);
+        distanceToSpeedScoring.put(6.0, 3.4);
+        distanceToSpeedScoring.put(8.2, 4.0);
+
+        // While hood is down
+        distanceToSpeedYeeting.put(5.0, 2.06);
+        distanceToSpeedYeeting.put(5.5, 2.11);
+        distanceToSpeedYeeting.put(6.0, 2.24);
+        distanceToSpeedYeeting.put(6.5, 2.31);
+        distanceToSpeedYeeting.put(7.0, 2.52);
+        distanceToSpeedYeeting.put(7.5, 2.68);
+        distanceToSpeedYeeting.put(8.0, 3.05);
+        distanceToSpeedYeeting.put(8.5, 3.2);
+        distanceToSpeedYeeting.put(9.0, 4.0);
+
+        // Launcher velocity (encoder units) -> projectile flight time (seconds)
+        // These values should be updated with real measurements from the robot.
+        velocityToFlightTime.put(2.31, 1.0);
+        velocityToFlightTime.put(2.4, 1.1);
+        velocityToFlightTime.put(2.8, 1.3);
+        velocityToFlightTime.put(3.5, 1.9);
+        velocityToFlightTime.put(4.0, 2.0);
     }
 
     public Pose2d getRobotPose() {
         return robotPoseSupplier.get();
+    }
+
+    public ChassisSpeeds getRobotVelocity() {
+        return robotVelocitySupplier.get();
+    }
+
+    /**
+     * Checks if the robot is moving slower than the configured translational
+     * and rotational velocity thresholds.
+     *
+     * @return true when both linear and angular speeds are below thresholds
+     */
+    public boolean isRobotVelocityBelowThreshold() {
+        ChassisSpeeds speeds = getRobotVelocity();
+        double translationalSpeed = Math.hypot(speeds.vxMetersPerSecond, speeds.vyMetersPerSecond);
+        return translationalSpeed < Constants.ROBOT_TRANSLATIONAL_SPEED_THRESHOLD
+            && Math.abs(speeds.omegaRadiansPerSecond) < Constants.ROBOT_ANGULAR_SPEED_THRESHOLD;
     }
 
     /**
@@ -225,15 +286,11 @@ public class LauncherSubsystem extends SubsystemBase {
         return atSpeed;
     }
 
-    public double getLaunchSpeed(AimPoints target) {
-          Transform2d difference = new Pose2d (
-            target.value.getX(),
-            target.value.getY(),
-            new Rotation2d()
-        ).minus(getRobotPose());
-
-        double distance = Math.sqrt(Math.pow(difference.getX(),2)+Math.pow(difference.getY(),2));
-        return getSpeedForDistance(distance);
+    public double getTargetLaunchSpeed(AimPoints target) {
+        // Use the motion-compensated virtual target for a more accurate launch speed.
+        Translation2d virtualTarget = getMotionCompensatedTargetTranslation(target);
+        double distance = getRobotPose().getTranslation().getDistance(virtualTarget);
+        return getSpeedForDistance(distance, target);
     }
 
     /**
@@ -295,12 +352,21 @@ public class LauncherSubsystem extends SubsystemBase {
         targetAngle = targetAngle + SmartDashboard.getNumber("Launcher/AngleAdjust", 0);
         // Clamp target angle (degrees) to within turret limits to prevent damage to turret
         SmartDashboard.putNumber("Launcher/TurretTarget", targetAngle);
-        if(targetAngle > Constants.TURRET_LEFT_LIMIT_DEG || targetAngle < Constants.TURRET_RIGHT_LIMIT_DEG){
+
+        // Check prior to adjusting if out-of-bounds
+        turretAtTarget = isAtTargetAngle(targetAngle) || !SmartDashboard.getBoolean("USELIMELIGHT", true);
+
+        // Cases to go to turret zero position
+        if( targetAngle > Constants.TURRET_LEFT_LIMIT_DEG ||
+            targetAngle < Constants.TURRET_RIGHT_LIMIT_DEG ||
+            !SmartDashboard.getBoolean("USELIMELIGHT", true)
+        ){
             targetAngle = 0.0;
         }
+
         double angleSpeed = anglePIDController.calculate(getTurretAngleDegrees(), targetAngle);
         angleSpeed = MathUtil.clamp(angleSpeed, -Constants.TURRET_MAX_SPEED, Constants.TURRET_MAX_SPEED);
-        SmartDashboard.putBoolean("Launcher/Turret_At_Position", isAtTargetAngle(targetAngle));
+        SmartDashboard.putBoolean("Launcher/Turret_At_Position", turretAtTarget);
         SmartDashboard.putNumber("Launcher/TurretPosition", getTurretAngleDegrees());
         turretAngle.set(angleSpeed);
     }
@@ -348,14 +414,14 @@ public class LauncherSubsystem extends SubsystemBase {
                 setTurretAngle(0);
                 if (robotpositionPose2d.getY() > 4.03){
                     // If in right half of midfield, aim at outpost for passing back
-                    aimatTarget(Constants.AimPoints.BLUE_FAR_SIDE); // TODO undo once midfield targetting is fixed
+                    aimatTarget(Constants.AimPoints.BLUE_FAR_SIDE);
                     SmartDashboard.putString("aimtarget", "BLUE_FAR_SIDE");
-                    return Constants.AimPoints.BLUE_OUTPOST;
+                    return Constants.AimPoints.BLUE_FAR_SIDE;
                 } else if (robotpositionPose2d.getY() < 4.03){
                     // If in left half of midfield, aim at far side for passing back
-                    aimatTarget(Constants.AimPoints.BLUE_OUTPOST); // TODO undo once midfield targetting is fixed
+                    aimatTarget(Constants.AimPoints.BLUE_OUTPOST);
                     SmartDashboard.putString("aimtarget", "BLUE_OUTPOST");
-                    return Constants.AimPoints.BLUE_FAR_SIDE;
+                    return Constants.AimPoints.BLUE_OUTPOST;
                 }
             }
         }
@@ -369,14 +435,14 @@ public class LauncherSubsystem extends SubsystemBase {
                 setTurretAngle(0);
                 if (robotpositionPose2d.getY() < 4.03){
                     // If in left half of midfield, aim at outpost for passing back
-                    aimatTarget(Constants.AimPoints.RED_FAR_SIDE); // TODO undo once midfield targetting is fixed
+                    aimatTarget(Constants.AimPoints.RED_FAR_SIDE);
                     SmartDashboard.putString("aimtarget", "RED_FAR_SIDE");
-                    return Constants.AimPoints.RED_OUTPOST;
+                    return Constants.AimPoints.RED_FAR_SIDE;
                 } else if (robotpositionPose2d.getY() > 4.03){
                     // If in right half of midfield, aim at far side for passing back
-                    aimatTarget(Constants.AimPoints.RED_OUTPOST); // TODO undo once midfield targetting is fixed
+                    aimatTarget(Constants.AimPoints.RED_OUTPOST);
                     SmartDashboard.putString("aimtarget", "RED_OUTPOST");
-                    return Constants.AimPoints.RED_FAR_SIDE;
+                    return Constants.AimPoints.RED_OUTPOST;
                 }
             }
         }
@@ -397,8 +463,12 @@ public class LauncherSubsystem extends SubsystemBase {
 
         SmartDashboard.putString("aimtarget", target.name());
 
-        // vector from robot to target (field coordinates)
-        Translation2d difference = target.value.toTranslation2d()
+        // Compute motion-compensated virtual target so the projectile arrives at the
+        // real target even while the robot is moving during flight.
+        Translation2d virtualTarget = getMotionCompensatedTargetTranslation(target);
+
+        // vector from robot to virtual target (field coordinates)
+        Translation2d difference = virtualTarget
         .minus(getRobotPose().getTranslation());
 
         double dx = difference.getX();
@@ -427,8 +497,14 @@ public class LauncherSubsystem extends SubsystemBase {
     /**
      * Activates the Kicker
      */
-    public void activateKicker() {
-        kickerMotor.set(Constants.KICKER_SPEED); // Run kicker at predefined speed if at target launch speed and angle
+    public void activateKicker(AimPoints target) {
+        double matchTime = DriverStation.getMatchTime();
+        // Turret Check      Robot Velocity                      Timer Check start             Target gating
+        if(turretAtTarget /* && isRobotVelocityBelowThreshold() */ && (HubTimer.isActive2sEarly() || HubTimer.isActive() || !(target == Constants.AimPoints.BLUE_HUB || target == Constants.AimPoints.RED_HUB)) || matchTime == -1){
+            setKickerSpeed(Constants.KICKER_SPEED); // Run kicker at predefined speed if at target launch speed and angle
+        } else {
+            setKickerSpeed(0); // Otherwise, stop the kicker to prevent feeding balls when not ready
+        }
     }
 
     /**
@@ -450,50 +526,185 @@ public class LauncherSubsystem extends SubsystemBase {
 
     /**
      * Gets the appropriate launch speed for a given distance to the target using linear interpolation
-     * between the points defined in the distanceToSpeed map. If the distance is outside the range of
+     * between the points defined in the distanceToSpeedScoring map. If the distance is outside the range of
      * the map, it will return the speed of the nearest endpoint.
      *
      * @param distance The distance to the target for which to get the launch speed
      * @return The calculated launch speed based on the distance
      */
-    public double getSpeedForDistance(double distance) {
-        if (distanceToSpeed.isEmpty()) {
-            throw new IllegalStateException("distance->speed map is empty");
+    public double getSpeedForDistance(double distance, AimPoints target) {
+        if (distanceToSpeedScoring.isEmpty()) {
+            throw new IllegalStateException("distance->Scoring speed map is empty");
         }
 
-        // exact match
-        Double exact = distanceToSpeed.get(distance);
-        if (exact != null) return exact;
+        if (distanceToSpeedYeeting.isEmpty()) {
+            throw new IllegalStateException("distance->Yeet speed map is empty");
+        }
 
-        Double lowKey = distanceToSpeed.floorKey(distance);
-        Double highKey = distanceToSpeed.ceilingKey(distance);
+        double lowDist;
+        double highDist;
+        double lowSpeed;
+        double highSpeed;
 
-        // out of range: use nearest endpoint
-        if (lowKey == null) return distanceToSpeed.get(highKey);
-        if (highKey == null) return distanceToSpeed.get(lowKey);
+        if(target == Constants.AimPoints.BLUE_HUB || target == Constants.AimPoints.RED_HUB){
+            SmartDashboard.putString("Launcher/SpeedMap", "Scoring");
+            // Hood is up, use scoring map
+            Double exact = distanceToSpeedScoring.get(distance);
+            if (exact != null) return exact;
 
-        double lowDist = lowKey;
-        double highDist = highKey;
-        double lowSpeed = distanceToSpeed.get(lowKey);
-        double highSpeed = distanceToSpeed.get(highKey);
+            Double lowKey = distanceToSpeedScoring.floorKey(distance);
+            Double highKey = distanceToSpeedScoring.ceilingKey(distance);
+
+            // out of range: use nearest endpoint
+            if (lowKey == null) return distanceToSpeedScoring.get(highKey);
+            if (highKey == null) return distanceToSpeedScoring.get(lowKey);
+
+            lowDist = lowKey;
+            highDist = highKey;
+            lowSpeed = distanceToSpeedScoring.get(lowKey);
+            highSpeed = distanceToSpeedScoring.get(highKey);
+        } else {
+            SmartDashboard.putString("Launcher/SpeedMap", "Yeeting");
+            // Hood is down, use yeeting map
+            Double exactYeet = distanceToSpeedYeeting.get(distance);
+            if (exactYeet != null) return exactYeet;
+
+            Double lowKeyYeet = distanceToSpeedYeeting.floorKey(distance);
+            Double highKeyYeet = distanceToSpeedYeeting.ceilingKey(distance);
+
+            // out of range: use nearest endpoint
+            if (lowKeyYeet == null) return distanceToSpeedYeeting.get(highKeyYeet);
+            if (highKeyYeet == null) return distanceToSpeedYeeting.get(lowKeyYeet);
+
+            lowDist = lowKeyYeet;
+            highDist = highKeyYeet;
+            lowSpeed = distanceToSpeedYeeting.get(lowKeyYeet);
+            highSpeed = distanceToSpeedYeeting.get(highKeyYeet);
+        }
 
         if (highDist == lowDist) return lowSpeed; // guard division by zero
 
         double t = (distance - lowDist) / (highDist - lowDist);
         double offset_adjust = SmartDashboard.getNumber("configlaunch", 0);
-        return lowSpeed + t * (highSpeed - lowSpeed) + offset_adjust;
+        if(SmartDashboard.getBoolean("USELIMELIGHT", true)){
+            return lowSpeed + t * (highSpeed - lowSpeed) + offset_adjust;
+        } else {
+            return 3.0;
+        }
     }
-    // Checks Temp of the Launcher
+
+    /**
+     * Converts the robot-relative {@link ChassisSpeeds} from the velocity supplier into
+     * field-relative X/Y velocity components.
+     *
+     * @return Field-relative velocity as a {@link Translation2d} (metres per second).
+     */
+    private Translation2d getFieldRelativeVelocity() {
+        ChassisSpeeds speeds = getRobotVelocity();
+        double heading = getRobotPose().getRotation().getRadians();
+        double fieldVx = speeds.vxMetersPerSecond * Math.cos(heading)
+                       - speeds.vyMetersPerSecond * Math.sin(heading);
+        double fieldVy = speeds.vxMetersPerSecond * Math.sin(heading)
+                       + speeds.vyMetersPerSecond * Math.cos(heading);
+        return new Translation2d(fieldVx, fieldVy);
+    }
+
+    /**
+     * Computes a motion-compensated virtual target position.
+     *
+     * <p>The robot moves during the projectile's flight, so we predict where it will be when
+     * the projectile arrives and shift the target accordingly. Uses one iteration:
+     * <ol>
+     *   <li>Compute initial distance → look up launch speed → look up flight time.</li>
+     *   <li>Compute robot displacement during that flight time (field-relative).</li>
+     *   <li>Return {@code realTarget − displacement} as the virtual aim point.</li>
+     * </ol>
+     *
+     * @param target The {@link AimPoints} value representing the real field target.
+     * @return A field-relative {@link Translation2d} of the virtual (motion-compensated) target.
+     */
+    public Translation2d getMotionCompensatedTargetTranslation(AimPoints target) {
+        Translation2d robotPos  = getRobotPose().getTranslation();
+        Translation2d targetPos = target.value.toTranslation2d();
+
+        // Step 1: initial distance → launch speed → flight time
+        double initialDistance = robotPos.getDistance(targetPos);
+        double initialSpeed    = getSpeedForDistance(initialDistance, target);
+        double flightTime      = getFlightTimeForVelocity(initialSpeed);
+
+        // Step 2: robot displacement during flight (field-relative)
+        Translation2d fieldVelocity    = getFieldRelativeVelocity();
+        Translation2d robotDisplacement = new Translation2d(
+            fieldVelocity.getX() * flightTime,
+            fieldVelocity.getY() * flightTime
+        );
+
+        // Step 3: virtual target = real target shifted back by robot displacement
+        Translation2d virtualTarget = targetPos.minus(robotDisplacement);
+
+        SmartDashboard.putNumber("Launcher/MotionComp/FlightTime",      flightTime);
+        SmartDashboard.putNumber("Launcher/MotionComp/DisplacementX",   robotDisplacement.getX());
+        SmartDashboard.putNumber("Launcher/MotionComp/DisplacementY",   robotDisplacement.getY());
+        SmartDashboard.putNumber("Launcher/MotionComp/VirtualTargetX",  virtualTarget.getX());
+        SmartDashboard.putNumber("Launcher/MotionComp/VirtualTargetY",  virtualTarget.getY());
+        return virtualTarget;
+    }
+
+    /**
+     * Gets the expected projectile flight time (seconds) for a given launcher velocity
+     * using linear interpolation between the points defined in {@code velocityToFlightTime}.
+     * If the velocity is outside the mapped range the nearest endpoint value is returned.
+     *
+     * @param velocity The launcher velocity in encoder units (same units used by {@link #getLaunchSpeed()})
+     * @return The interpolated flight time in seconds
+     */
+    public double getFlightTimeForVelocity(double velocity) {
+        if (velocityToFlightTime.isEmpty()) {
+            throw new IllegalStateException("velocity->flightTime map is empty");
+        }
+
+        Double exact = velocityToFlightTime.get(velocity);
+        if (exact != null) return exact;
+
+        Double lowKey  = velocityToFlightTime.floorKey(velocity);
+        Double highKey = velocityToFlightTime.ceilingKey(velocity);
+
+        // Out of range: return nearest endpoint
+        if (lowKey  == null) return velocityToFlightTime.get(highKey);
+        if (highKey == null) return velocityToFlightTime.get(lowKey);
+
+        double t = (velocity - lowKey) / (highKey - lowKey);
+        double lowTime  = velocityToFlightTime.get(lowKey);
+        double highTime = velocityToFlightTime.get(highKey);
+        return lowTime + t * (highTime - lowTime);
+    }
+
+    /**
+     *  Checks Temp of the Launcher
+     */
     public double getLauncherTemp() {
         return launchMotor.getMotorTemperature();
     }
-    // Checks the Temp of the Kicker
-     public double getKickerTemp() {
+
+    /**
+     *  Checks the Temp of the Kicker
+     */
+    public double getKickerTemp() {
         return kickerMotor.getMotorTemperature();
     }
-    // Checks the Temp of the Angle Motor
-     public double getTurretAngleTemp() {
+
+    /**
+     *  Checks the Temp of the Angle Motor
+     */
+    public double getTurretAngleTemp() {
         return turretAngle.getMotorTemperature();
+    }
+
+    /**
+     *  Checks the Temp of the Hood Motor
+     */
+    public double getHoodTemp() {
+        return hoodMotor.getMotorTemperature();
     }
 }
 // the cake was a lie

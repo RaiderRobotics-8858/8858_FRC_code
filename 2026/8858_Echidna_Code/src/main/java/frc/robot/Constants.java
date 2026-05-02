@@ -45,12 +45,14 @@ public class Constants {
     public static final double ROBOT_LENGTH = 28;
     public static final double ROBOT_WIDTH = 26;
     public static final double MAX_FUEL = 45;
-    
+
     // Swerve Constants
     public static final double ROBOT_MASS = Units.lbsToKilograms(120); // 32lbs * kg per pound
     public static final Matter CHASSIS = new Matter(new Translation3d(0, 0, Units.inchesToMeters(8)), ROBOT_MASS);
     public static final double LOOP_TIME = 0.13; // s, 20ms + 110ms spark max velocity lag
     public static final double MAX_SPEED = Units.feetToMeters(30);
+    public static final double ROBOT_TRANSLATIONAL_SPEED_THRESHOLD = Units.feetToMeters(5.0);
+    public static final double ROBOT_ANGULAR_SPEED_THRESHOLD = Units.degreesToRadians(15.0);
 
     // Launch subsystem Constants
     public static final double TURRET_ANGLE_KP = 0.02;
@@ -77,11 +79,11 @@ public class Constants {
     public static final double TURRET_LEFT_LIMIT_DEG = TURRET_LEFT_LIMIT * TURRET_DEGREES_PER_UNIT; // Left limit for turret angle (degrees)
     public static final double TURRET_CENTER = 0.0; // Center position for turret angle (degrees)
     public static final double HOOD_HIGH_LIMIT = 0.274;
-    public static final double HOOD_LOW_LIMIT = 0.800;
+    public static final double HOOD_LOW_LIMIT = 0.75;
 
     // Intake susbystems constants
     public static final double INTAKE_ARM_KP = 1.2;
-    public static final double INTAKE_ARM_KI = 0.1;
+    public static final double INTAKE_ARM_KI = 0.3;
     public static final double INTAKE_ARM_KD = 0;
     public static final double INTAKE_ARM_LOWERED = 0.79;
     public static final double INTAKE_ARM_HALF_RAISED = 0.60;
@@ -90,19 +92,19 @@ public class Constants {
     public static final double HOPPER_ROLLER_SPEED = 1.0;
 
     // Climber subsystem constants
-    public static final double CLIMB_EXTENDED_POS = 65.0;
-    public static final double CLIMB_LOWER_POS = 30.0;
+    public static final double CLIMB_EXTENDED_POS = 65;
+    public static final double CLIMB_LOWER_POS = 13.0;
     public static final double CLIMBER_KP = 0.2;
-    public static final double CLIMBER_KI = 0.6;
+    public static final double CLIMBER_KI = 0.5;
     public static final double CLIMBER_KD = 0;
 
 
     public static enum AimPoints {
-        RED_HUB(new Translation3d(11.938, 4.034536, 1.5748)),
+        RED_HUB(new Translation3d(12.2, 4.034536, 1.5748)),
         RED_OUTPOST(new Translation3d(15.75, 7.25, 0)),
         RED_FAR_SIDE(new Translation3d(15.75, 0.75, 0)),
 
-        BLUE_HUB(new Translation3d(4.5974, 4.034536, 1.5748)),
+        BLUE_HUB(new Translation3d(4.3354, 4.034536, 1.5748)),
         BLUE_OUTPOST(new Translation3d(0.75, 0.75, 0)),
         BLUE_FAR_SIDE(new Translation3d(0.75, 7.25, 0));
 
@@ -134,5 +136,7 @@ public class Constants {
     public static final double DEADBAND = 0.1;
     public static final double TRANSLATION_SCALE = 0.5;
     public static final double ROTATION_SCALE = 1.0;
+    public static final double TRANSLATION_SCALE_SLOW = 0.10;
+    public static final double ROTATION_SCALE_SLOW = 0.25;
 
 }

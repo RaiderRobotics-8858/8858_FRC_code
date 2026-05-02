@@ -1,0 +1,54 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 4.008174157303371,
+        "y": 0.6518164794007486
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 4.615691390918904,
+        "y": 0.6524885420345401
+      },
+      "isLocked": false,
+      "linkedName": "Right Trench Launch"
+    },
+    {
+      "anchor": {
+        "x": 5.428795180722891,
+        "y": 0.5739087018544944
+      },
+      "prevControl": {
+        "x": 4.893337349397589,
+        "y": 0.6036987951807224
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": "Before Fuel collect AGE"
+    }
+  ],
+  "rotationTargets": [],
+  "constraintZones": [],
+  "pointTowardsZones": [],
+  "eventMarkers": [],
+  "globalConstraints": {
+    "maxVelocity": 1.5,
+    "maxAcceleration": 3.0,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 2.0,
+    "rotation": 178.9190758133394
+  },
+  "reversed": false,
+  "folder": "Right Paths",
+  "idealStartingState": {
+    "velocity": 0,
+    "rotation": 180.0
+  },
+  "useDefaultConstraints": false
+}

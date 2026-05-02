@@ -3,33 +3,52 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 0.774,
-        "y": 6.0
+        "x": 0.5456205420827387,
+        "y": 5.958277108433736
       },
       "prevControl": null,
       "nextControl": {
-        "x": 2.0084216867469884,
-        "y": 4.537674698795181
+        "x": 3.4050641940085593,
+        "y": 7.703109843081313
       },
       "isLocked": false,
-      "linkedName": null
+      "linkedName": "depot"
     },
     {
       "anchor": {
-        "x": 2.511096385542168,
-        "y": 4.024072289156626
+        "x": 0.506804564907275,
+        "y": 0.7032952924328151
       },
       "prevControl": {
-        "x": 1.9865662650602407,
-        "y": 4.559530120481927
+        "x": 2.3699714693295286,
+        "y": 0.44452211126305874
       },
       "nextControl": null,
       "isLocked": false,
-      "linkedName": null
+      "linkedName": "Human Player Area"
     }
   ],
-  "rotationTargets": [],
-  "constraintZones": [],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 0.45637228979376115,
+      "rotationDegrees": 0.0
+    }
+  ],
+  "constraintZones": [
+    {
+      "name": "Constraints Zone",
+      "minWaypointRelativePos": 0.0,
+      "maxWaypointRelativePos": 0.15975935828876756,
+      "constraints": {
+        "maxVelocity": 1.0,
+        "maxAcceleration": 3.0,
+        "maxAngularVelocity": 540.0,
+        "maxAngularAcceleration": 720.0,
+        "nominalVoltage": 12.0,
+        "unlimited": false
+      }
+    }
+  ],
   "pointTowardsZones": [],
   "eventMarkers": [],
   "globalConstraints": {
@@ -42,13 +61,13 @@
   },
   "goalEndState": {
     "velocity": 0,
-    "rotation": 0.0
+    "rotation": 90.0
   },
   "reversed": false,
-  "folder": "V Paths",
+  "folder": "Middle Path",
   "idealStartingState": {
     "velocity": 0,
     "rotation": 0.0
   },
-  "useDefaultConstraints": true
+  "useDefaultConstraints": false
 }

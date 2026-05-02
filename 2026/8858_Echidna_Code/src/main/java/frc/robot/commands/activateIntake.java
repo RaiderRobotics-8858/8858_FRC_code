@@ -12,10 +12,8 @@ public class activateIntake extends Command {
      * running the intake rollers at a specified speed, and running the hopper at a specified speed.
      *
      * @param intakeSubsystem The intake subsystem to control
-     * @param hopperSubsystem The hopper subsystem to control
      * @param armPosition The target position for the intake arm
      * @param rollerSpeed The speed to set the intake rollers to, from -1.0 to 1.0
-     * @param hopperSpeed The speed to set the hopper to, from -1.0 to 1.0
      */
     public activateIntake(IntakeSubsystem intakeSubsystem, double armPosition, double rollerSpeed) {
         this.intakeSubsystem = intakeSubsystem;

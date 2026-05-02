@@ -3,13 +3,13 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 0.5456205420827387,
-        "y": 0.6903566333808839
+        "x": 0.506804564907275,
+        "y": 0.7032952924328151
       },
       "prevControl": null,
       "nextControl": {
-        "x": 1.5456205420827387,
-        "y": 0.6903566333808842
+        "x": 1.5068045649072748,
+        "y": 0.7032952924328153
       },
       "isLocked": false,
       "linkedName": "Human Player Area"
@@ -48,7 +48,7 @@
   "folder": "AS Paths",
   "idealStartingState": {
     "velocity": 0,
-    "rotation": 179.9999999994097
+    "rotation": 90.0
   },
   "useDefaultConstraints": false
 }

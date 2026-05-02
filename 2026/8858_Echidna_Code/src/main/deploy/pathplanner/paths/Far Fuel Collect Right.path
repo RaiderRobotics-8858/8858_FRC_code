@@ -3,13 +3,13 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 5.999099876695437,
+        "x": 5.428795180722891,
         "y": 0.5739087018544944
       },
       "prevControl": null,
       "nextControl": {
-        "x": 6.432000742798568,
-        "y": 1.0628284498972196
+        "x": 7.6614465075276925,
+        "y": 0.6515234743965418
       },
       "isLocked": false,
       "linkedName": "Before Fuel collect AGE"
@@ -20,20 +20,39 @@
         "y": 3.4186128236744753
       },
       "prevControl": {
-        "x": 7.892427851975102,
-        "y": 2.140070654999777
+        "x": 7.942168674698795,
+        "y": 1.2702891566265069
       },
       "nextControl": null,
       "isLocked": false,
       "linkedName": "Far Right Fuel End"
     }
   ],
-  "rotationTargets": [],
-  "constraintZones": [],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 0.5515600211528245,
+      "rotationDegrees": -94.61243946267304
+    }
+  ],
+  "constraintZones": [
+    {
+      "name": "Constraints Zone",
+      "minWaypointRelativePos": 0.5822192513368972,
+      "maxWaypointRelativePos": 1.0,
+      "constraints": {
+        "maxVelocity": 1.0,
+        "maxAcceleration": 3.0,
+        "maxAngularVelocity": 540.0,
+        "maxAngularAcceleration": 720.0,
+        "nominalVoltage": 12.0,
+        "unlimited": false
+      }
+    }
+  ],
   "pointTowardsZones": [],
   "eventMarkers": [],
   "globalConstraints": {
-    "maxVelocity": 1.5,
+    "maxVelocity": 3.0,
     "maxAcceleration": 3.0,
     "maxAngularVelocity": 540.0,
     "maxAngularAcceleration": 720.0,
@@ -47,8 +66,8 @@
   "reversed": false,
   "folder": "Right Paths",
   "idealStartingState": {
-    "velocity": 1.5,
-    "rotation": -135.0
+    "velocity": 2.0,
+    "rotation": 178.9190758133394
   },
   "useDefaultConstraints": true
 }

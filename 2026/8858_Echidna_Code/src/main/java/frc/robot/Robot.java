@@ -9,6 +9,8 @@ import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import frc.robot.util.HubTimer;
+
 import org.littletonrobotics.junction.LogFileUtil;
 import org.littletonrobotics.junction.LoggedRobot;
 import org.littletonrobotics.junction.Logger;
@@ -68,6 +70,9 @@ public class Robot extends LoggedRobot {
 
     // Publish SmartDashboard values used for tuning.
     SmartDashboard.putBoolean("TESTMODE", false);
+    SmartDashboard.putBoolean("USELIMELIGHT", true);
+
+    // SmartDashboard.putData("Field", Constants.AimPoints.RED_FAR_SIDE.value.toTranslation2d());
 
     SmartDashboard.putBoolean("Launcher/TurretZeroedFlag", false);
     SmartDashboard.putNumber("configlaunch", 0);
@@ -109,6 +114,7 @@ public class Robot extends LoggedRobot {
 
   @Override
   public void disabledPeriodic() {
+    robotContainer.disabledPeriodic();
   }
 
   @Override
@@ -126,6 +132,7 @@ public class Robot extends LoggedRobot {
 
   @Override
   public void autonomousPeriodic() {
+    robotContainer.autonomousPeriodic();
   }
 
   @Override
@@ -139,8 +146,14 @@ public class Robot extends LoggedRobot {
     }
   }
 
+  boolean hubActive = false;
   @Override
   public void teleopPeriodic() {
+    robotContainer.teleopPeriodic();
+    if(HubTimer.isActive() && !hubActive){
+      // rumble
+    }
+    hubActive = HubTimer.isActive();
   }
 
   @Override

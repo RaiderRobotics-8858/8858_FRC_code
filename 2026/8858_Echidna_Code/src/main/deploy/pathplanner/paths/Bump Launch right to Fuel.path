@@ -1,0 +1,63 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 2.784008559193065,
+        "y": 2.4500142653287273
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 4.064935805991441,
+        "y": 2.501768901569187
+      },
+      "isLocked": false,
+      "linkedName": "Bump Launch Right"
+    },
+    {
+      "anchor": {
+        "x": 6.743238231098432,
+        "y": 2.4500142653287273
+      },
+      "prevControl": {
+        "x": 5.743238231098432,
+        "y": 2.4500142653287273
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": null
+    }
+  ],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 0.17080909571655212,
+      "rotationDegrees": 92.14447010461396
+    },
+    {
+      "waypointRelativePos": 0.972501322051821,
+      "rotationDegrees": -177.98840986973332
+    }
+  ],
+  "constraintZones": [],
+  "pointTowardsZones": [],
+  "eventMarkers": [],
+  "globalConstraints": {
+    "maxVelocity": 3.0,
+    "maxAcceleration": 3.0,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 0,
+    "rotation": 179.9999999975982
+  },
+  "reversed": false,
+  "folder": "Right Paths",
+  "idealStartingState": {
+    "velocity": 0,
+    "rotation": 64.17900802524049
+  },
+  "useDefaultConstraints": true
+}

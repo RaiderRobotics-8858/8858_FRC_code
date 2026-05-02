@@ -47,6 +47,7 @@ import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.Radians;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -137,11 +138,6 @@ public class SwerveSubsystem extends SubsystemBase {
     // FF values pulled from SysId characterization
     // replaceSwerveModuleFeedforward(0.268, 2.67, 0.23);
 
-    // swerveDrive.stopOdometryThread(); // TODO: see if this is needed
-
-    // TODO: this lets you actual move the robot
-    // setMotorBrake(false);
-
     SwerveIMU gyro = swerveDrive.getGyro();
 
     if (IS_LIMELIGHT_ENABLED) {
@@ -199,9 +195,8 @@ public class SwerveSubsystem extends SubsystemBase {
 
   @Override
   public void periodic() {
-    // swerveDrive.updateOdometry(); // TODO: see if this is needed
 
-    if (IS_LIMELIGHT_ENABLED) {
+    if (IS_LIMELIGHT_ENABLED && SmartDashboard.getBoolean("USELIMELIGHT", true)) {
       // Get MegaTag2 pose
       Optional<PoseEstimate> visionEstimate = poseEstimator.getPoseEstimate();
 
@@ -251,8 +246,8 @@ public class SwerveSubsystem extends SubsystemBase {
             this::getRobotVelocity, // ChassisSpeeds supplier. MUST BE ROBOT RELATIVE
             (speeds, feedforwards) -> drive(speeds), // Method that will drive the robot given ROBOT RELATIVE ChassisSpeeds. Also optionally outputs individual module feedforwards
             new PPHolonomicDriveController( // PPHolonomicController is the built in path following controller for holonomic drive trains
-                    new PIDConstants(5.0, 0.0, 0.0), // Translation PID constants
-                    new PIDConstants(5.0, 0.0, 0.0) // Rotation PID constants
+                    new PIDConstants(2.0, 0.0, 0.0), // Translation PID constants
+                    new PIDConstants(2.0, 0.0, 0.0) // Rotation PID constants
             ),
            config, // The robot configuration
             () -> {
