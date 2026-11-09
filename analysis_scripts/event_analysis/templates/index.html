@@ -35,6 +35,12 @@
         button:hover {
             background-color: #0056b3;
         }
+        .exit-button {
+            background-color: #b22222;
+        }
+        .exit-button:hover {
+            background-color: #801818;
+        }
         #rpPlotDiv {
             margin-top: 20px;
         }
@@ -113,6 +119,43 @@
         .neutral-diff {
             color: #ffffff;
         }
+        .result-win {
+            color: #00ff00;
+            font-weight: bold;
+        }
+        .result-loss {
+            color: #ff4444;
+            font-weight: bold;
+        }
+        .result-tie {
+            color: #ffcc00;
+            font-weight: bold;
+        }
+        .rank-up {
+            color: #00ff00;
+        }
+        .rank-down {
+            color: #ff4444;
+        }
+        .rank-same {
+            color: #ffffff;
+        }
+        .match-team {
+            display: block;
+        }
+        .team-link {
+            color: inherit;
+        }
+        .selected-team-red,
+        .selected-team-blue {
+            font-weight: bold;
+        }
+        .selected-team-red {
+            color: #ff4444;
+        }
+        .selected-team-blue {
+            color: #55aaff;
+        }
     </style>
 </head>
 <body>
@@ -122,15 +165,33 @@
             <input type="text" id="teamNum" placeholder="Team Number (e.g., 8858)">
             <input type="number" id="year" placeholder="Year (e.g., 2025)" min="2015" max="2025">
             <button onclick="getTeamEvents()">Find Events</button>
+            <button class="exit-button" onclick="exitApplication()">Exit</button>
         </div>
         <div id="eventSelector">
             <select id="eventList"></select>
             <button onclick="analyzeEvent()">Analyze Event</button>
         </div>
         <div id="errorMessage" class="error"></div>
-        
+
         <div id="resultsContainer">
             <div id="rpPlotDiv"></div>
+            <div class="match-breakdown">
+                <h3>Match-by-Match Results &amp; Rankings</h3>
+                <table class="match-table">
+                    <thead>
+                        <tr>
+                            <th>Match #</th>
+                            <th>Result</th>
+                            <th>Score (Team - Opp)</th>
+                            <th>Alliance (Pre-Match Rank)</th>
+                            <th>Opponents (Pre-Match Rank)</th>
+                            <th>Team Post-Match Rank</th>
+                            <th>Team &Delta; Rank</th>
+                        </tr>
+                    </thead>
+                    <tbody id="matchRankings"></tbody>
+                </table>
+            </div>
             <div id="penPlotDiv"></div>
             <div class="rankings">
                 <div class="ranking-section">
@@ -160,10 +221,22 @@
     </div>
 
     <script>
+        function exitApplication() {
+            if (!window.confirm('Exit the Event Analysis server?')) {
+                return;
+            }
+
+            $.ajax({
+                url: '/shutdown',
+                type: 'POST',
+                complete: handleServerDown
+            });
+        }
+
         function getTeamEvents() {
             const teamNum = document.getElementById('teamNum').value;
             const year = document.getElementById('year').value;
-            
+
             if (!teamNum || !year) {
                 showError('Please enter both team number and year');
                 return;
@@ -180,14 +253,14 @@
                     if (response.success) {
                         const eventList = document.getElementById('eventList');
                         eventList.innerHTML = '';
-                        
+
                         response.events.forEach(event => {
                             const option = document.createElement('option');
                             option.value = event.key;
                             option.textContent = `${event.name} (${event.start_date})`;
                             eventList.appendChild(option);
                         });
-                        
+
                         document.getElementById('eventSelector').style.display = 'block';
                         document.getElementById('errorMessage').textContent = '';
                     } else {
@@ -203,7 +276,7 @@
         function analyzeEvent() {
             const eventKey = document.getElementById('eventList').value;
             const teamNum = document.getElementById('teamNum').value;
-            
+
             if (!eventKey) {
                 showError('Please select an event');
                 return;
@@ -219,18 +292,21 @@
                 success: function(response) {
                     // Show the results container
                     document.getElementById('resultsContainer').style.display = 'block';
-                    
+
                     // Plot the graphs
                     Plotly.newPlot('rpPlotDiv', JSON.parse(response.rp_graph));
                     Plotly.newPlot('penPlotDiv', JSON.parse(response.pen_graph));
-                    
+
                     // Update rankings
                     updateRankings('totalRankings', response.total_rankings, teamNum, 'score', 'Total Penalties');
                     updateRankings('diffRankings', response.diff_rankings, teamNum, 'diff', 'Differential');
-                    
+
                     // Update match breakdown
                     updateMatchBreakdown(response.match_breakdown);
-                    
+
+                    // Update match-by-match rankings
+                    updateMatchRankings(response.match_rankings, response.selected_team, eventKey);
+
                     document.getElementById('errorMessage').textContent = '';
                 },
                 error: function(error) {
@@ -242,7 +318,7 @@
         function updateRankings(elementId, rankings, selectedTeam, valueKey, label) {
             const container = document.getElementById(elementId);
             container.innerHTML = '';
-            
+
             rankings.forEach((item, index) => {
                 const div = document.createElement('div');
                 div.className = 'team-rank' + (item.team === selectedTeam ? ' team-highlight' : '');
@@ -257,13 +333,13 @@
         function updateMatchBreakdown(matches) {
             const tbody = document.getElementById('matchBreakdown');
             tbody.innerHTML = '';
-            
+
             matches.forEach(match => {
                 const tr = document.createElement('tr');
-                const diffClass = match.difference > 0 ? 'positive-diff' : 
-                                match.difference < 0 ? 'negative-diff' : 
+                const diffClass = match.difference > 0 ? 'positive-diff' :
+                                match.difference < 0 ? 'negative-diff' :
                                 'neutral-diff';
-                
+
                 tr.innerHTML = `
                     <td>${match.match_num}</td>
                     <td>${match.against_team}</td>
@@ -274,9 +350,70 @@
             });
         }
 
+        function updateMatchRankings(matches, selectedTeam, eventKey) {
+            const tbody = document.getElementById('matchRankings');
+            tbody.innerHTML = '';
+
+            matches.forEach(match => {
+                const tr = document.createElement('tr');
+                const resultClass = match.result === 'W' ? 'result-win' :
+                                match.result === 'L' ? 'result-loss' :
+                                'result-tie';
+                const deltaClass = match.delta > 0 ? 'rank-up' :
+                                match.delta < 0 ? 'rank-down' :
+                                'rank-same';
+                const deltaText = (match.delta === null || match.delta === undefined) ? 'N/A' :
+                                match.delta > 0 ? `&#9650; ${match.delta}` :
+                                match.delta < 0 ? `&#9660; ${Math.abs(match.delta)}` :
+                                '—';
+                const selectedAlliance = match.match_teams.find(team => team.team === selectedTeam)?.alliance;
+                const formatTeams = teams => teams.map(team => {
+                    const rank = team.pre_rank === null || team.pre_rank === undefined ? 'N/A' : team.pre_rank;
+                    const selectedTeamClass = team.team === selectedTeam ? ` selected-team-${team.alliance}` : '';
+                    return `<span class="match-team ${team.alliance}-alliance"><a class="team-link${selectedTeamClass}" href="https://www.thebluealliance.com/team/${team.team}" target="_blank" rel="noopener noreferrer">${team.team}</a> (#${rank})</span>`;
+                }).join('');
+                const selectedAllianceTeams = match.match_teams.filter(team => team.alliance === selectedAlliance);
+                selectedAllianceTeams.sort((firstTeam, secondTeam) => {
+                    if (firstTeam.team === selectedTeam) return -1;
+                    if (secondTeam.team === selectedTeam) return 1;
+                    return 0;
+                });
+                const allianceTeams = formatTeams(selectedAllianceTeams);
+                const opponentTeams = formatTeams(match.match_teams.filter(team => team.alliance !== selectedAlliance));
+                const matchUrl = `https://www.thebluealliance.com/match/${eventKey}_qm${match.match_num}`;
+
+                tr.innerHTML = `
+                    <td>${match.match_num}</td>
+                    <td class="${resultClass}">${match.result}</td>
+                    <td><a class="team-link" href="${matchUrl}" target="_blank" rel="noopener noreferrer">${match.team_score} - ${match.opp_score}</a></td>
+                    <td>${allianceTeams}</td>
+                    <td>${opponentTeams}</td>
+                    <td>${match.post_rank !== null && match.post_rank !== undefined ? match.post_rank : 'N/A'}</td>
+                    <td class="${deltaClass}">${deltaText}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
         function showError(message) {
             document.getElementById('errorMessage').textContent = message;
         }
+
+        // detects the server going away (e.g. Ctrl+C in the terminal) and closes this window
+        function handleServerDown() {
+            clearInterval(serverCheckIntervalId);
+            window.close();
+            document.body.innerHTML = '<div class="container"><h1>Event Analysis has stopped.</h1></div>';
+        }
+
+        const serverCheckIntervalId = setInterval(function() {
+            $.ajax({
+                url: '/ping',
+                type: 'GET',
+                timeout: 3000,
+                error: handleServerDown
+            });
+        }, 3000);
     </script>
 </body>
 </html>

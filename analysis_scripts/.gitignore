@@ -11,6 +11,7 @@ ENV/
 
 # API Keys
 api_key.py
+tba_analysis/.cache/
 
 # IDE
 .vscode/

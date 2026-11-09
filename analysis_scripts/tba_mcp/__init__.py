@@ -1,0 +1,1 @@
+"""MCP tools for querying The Blue Alliance."""
