@@ -1,0 +1,6 @@
+
+# Ignore any PDFs generated here
+*.pdf
+
+# Ignore the pandoc temporary directory
+.pandoc_tmp/
