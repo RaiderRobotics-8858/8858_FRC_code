@@ -1,3 +1,10 @@
+#if defined(ARDUINO_ARCH_ESP32) || defined(ESP32)
+  #undef pinMode
+  #undef digitalWrite
+  #undef digitalRead
+  #undef analogRead
+  #undef analogWrite
+#endif
 #include <FastLED.h>
 
 // LED strip configuration
@@ -430,7 +437,14 @@ void loop() {
         clearscreen();
 
         if(str_in == "reset"){
+#if defined(ARDUINO_ARCH_ESP32) || defined(ESP32)
+            ESP.restart();
+#elif defined(ARDUINO_ARCH_RENESAS) || defined(ARDUINO_ARCH_RENESAS_UNO) || defined(__arm__)
             NVIC_SystemReset();
+#else
+            void (*resetFunc)(void) = 0;
+            resetFunc();
+#endif
         }
 
         // Randomizes the positions of all beams
@@ -580,6 +594,27 @@ void loop() {
             Serial.print("(");
             Serial.print(FIFO_SIZE - fifo_cnt);
             Serial.println(" spots remaining)");
+            cmd_keyword = true;
+        }
+
+        if(str_in == "fifo clr"){
+            fifo_cnt = 0;
+            Serial.println("INFO : FIFO cleared");
+            cmd_keyword = true;
+        }
+
+        if(str_in == "cancel"){
+            fifo_cnt = 0;
+            disp_str = "";
+            curr_color = DEFAULT_COLOR;
+            color_sel = DEFAULT_COLOR;
+            color_input_en = false;
+            text_mode_disp_done = true;
+            string_to_led_map("", disp_speed, CRGB::Black, true, true);
+            for(int row = 0; row < NUM_ROWS; row++){
+                fill_solid(leds[row], NUM_LEDS, CRGB::Black);
+            }
+            Serial.println("INFO : Display cancelled");
             cmd_keyword = true;
         }
 

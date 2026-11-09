@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>8858 LED Display Control</title>
+    <style>
+        :root {
+            --ink: #f4f1e8;
+            --muted: #a9b1b2;
+            --panel: #182326;
+            --panel-light: #223236;
+            --line: #3b4b4d;
+            --accent: #f0b44d;
+            --danger: #e87567;
+            --success: #8bd3a8;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            color: var(--ink);
+            background: radial-gradient(circle at top right, #30484a 0, #101719 48%, #0a0f10 100%);
+            font-family: Georgia, "Times New Roman", serif;
+        }
+        main { width: min(980px, 100%); margin: 0 auto; padding: 36px 20px 56px; }
+        header { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 28px; }
+        h1 { margin: 0; font-size: clamp(2rem, 6vw, 4.4rem); line-height: .92; letter-spacing: 0; }
+        .kicker { color: var(--accent); font: 700 .78rem/1.2 Consolas, monospace; letter-spacing: .12em; text-transform: uppercase; }
+        .subtitle { max-width: 280px; color: var(--muted); margin: 0; line-height: 1.4; }
+        .layout { display: grid; grid-template-columns: 1.4fr .9fr; gap: 16px; }
+        section { background: rgba(24, 35, 38, .94); border: 1px solid var(--line); padding: 20px; }
+        section h2 { margin: 0 0 16px; font-size: 1.15rem; font-weight: normal; }
+        .connection { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+        select, input, button { font: inherit; color: var(--ink); border: 1px solid var(--line); border-radius: 3px; }
+        select, input { background: #0f1719; padding: 11px 12px; }
+        select { min-width: 270px; flex: 1; }
+        input { width: 100%; }
+        button { padding: 10px 14px; background: var(--panel-light); cursor: pointer; }
+        button:hover:not(:disabled), button.active { border-color: var(--accent); color: var(--accent); }
+        button.primary { background: var(--accent); border-color: var(--accent); color: #1c211f; font-weight: bold; }
+        button:disabled { cursor: not-allowed; opacity: .42; }
+        .status { flex-basis: 100%; color: var(--muted); font: .84rem Consolas, monospace; min-height: 1.2em; }
+        .status.good { color: var(--success); }
+        .status.bad { color: var(--danger); }
+        .button-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+        .color-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+        .color-grid button { border-left: 7px solid var(--swatch); }
+        .text-row { display: flex; gap: 8px; margin-top: 10px; }
+        .text-row button { white-space: nowrap; }
+        .event-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .event-actions { display: flex; gap: 8px; margin-top: 10px; }
+        .event-ranks { display: block; margin-top: 10px; }
+        .event-ranks input { width: auto; }
+        .hint { color: var(--muted); font-size: .9rem; line-height: 1.4; }
+        pre { min-height: 100px; margin: 0; padding: 12px; overflow: auto; white-space: pre-wrap; color: #d9e4dd; background: #0d1415; font: .82rem/1.5 Consolas, monospace; }
+        @media (max-width: 700px) {
+            header { display: block; }
+            .subtitle { margin-top: 14px; }
+            .layout { grid-template-columns: 1fr; }
+            .connection { grid-column: auto; }
+        }
+    </style>
+</head>
+<body>
+<main>
+    <header>
+        <div><div class="kicker">Pit display / serial control</div><h1>LED command desk</h1></div>
+        <p class="subtitle">A local control surface for the 8858 Arduino display controller.</p>
+    </header>
+
+    <div class="layout">
+        <section class="connection">
+            <select id="port" aria-label="Arduino serial port"></select>
+            <select id="board" aria-label="Arduino board model">
+                <option value="uno_r4">Arduino Uno R4 WiFi</option>
+                <option value="nano_esp32">Arduino Nano ESP32 (ABX00092)</option>
+            </select>
+            <button type="button" onclick="refreshPorts()">Refresh ports</button>
+            <button type="button" class="primary" id="connectButton" onclick="connectArduino()">Connect</button>
+            <button type="button" id="disconnectButton" onclick="disconnectArduino()" disabled>Disconnect</button>
+            <button type="button" id="firmwareButton" onclick="updateFirmware()" disabled>Compile &amp; upload firmware</button>
+            <div class="status" id="connectionStatus">Looking for serial ports...</div>
+        </section>
+
+        <section style="grid-column: 1 / -1">
+            <h2>Post qualification scores</h2>
+            <div class="event-fields">
+                <input id="teamNumber" inputmode="numeric" value="8858" placeholder="Team number" aria-label="Team number">
+                <input id="eventYear" type="number" value="{{ current_year }}" min="1992" max="2100" placeholder="Year" aria-label="Event year">
+            </div>
+            <div class="event-actions">
+                <button type="button" onclick="loadTeamEvents()">Find events</button>
+                <select id="eventSelect" aria-label="FRC event" disabled>
+                    <option value="">Find events to select one</option>
+                </select>
+                <button type="button" class="primary" id="postScoresButton" onclick="postScores()" disabled>Post scores</button>
+            </div>
+            <label class="event-ranks"><input id="showRanks" type="checkbox"> Include post-match team rankings</label>
+            <p class="hint">Scores are posted in qualification-match order using the Arduino driver's red, blue, and tie messages.</p>
+        </section>
+
+        <section>
+            <h2>Display mode</h2>
+            <div class="button-grid" id="modeButtons">
+                {% for mode in modes %}
+                <button type="button" data-mode="{{ mode }}" onclick="sendMode('{{ mode }}')">{{ mode }}</button>
+                {% endfor %}
+            </div>
+            <p class="hint">Modes change the animation running on the sign. Text mode accepts messages below.</p>
+        </section>
+
+        <section>
+            <h2>Brightness</h2>
+            <div class="button-grid">
+                <button type="button" onclick="sendBrightness('bdn')">Dim</button>
+                <button type="button" onclick="sendBrightness('bup')">Brighten</button>
+            </div>
+            <p class="hint">Brightness changes are applied by the controller in fixed steps.</p>
+        </section>
+
+        <section>
+            <h2>Select Color</h2>
+            <div class="color-grid">
+                {% for color in colors %}
+                <button type="button" data-color="{{ color }}" style="--swatch: {{ color }}" onclick="selectColor('{{ color }}')">{{ color }}</button>
+                {% endfor %}
+            </div>
+            <p class="hint">Selected color: <strong id="selectedColor">white</strong></p>
+        </section>
+
+        <section>
+            <h2>Text message</h2>
+            <form onsubmit="sendText(event)">
+                <input id="message" maxlength="200" autocomplete="off" placeholder="Message for the sign" aria-label="Message">
+                <div class="text-row">
+                    <button class="primary" type="submit">Display message</button>
+                    <button type="button" onclick="cancelDisplay()">Cancel</button>
+                </div>
+            </form>
+            <p class="hint">Messages are sent as one line and queued by the Arduino.</p>
+        </section>
+
+        <section style="grid-column: 1 / -1">
+            <h2>Controller response</h2>
+            <pre id="output">No commands sent yet.</pre>
+        </section>
+    </div>
+</main>
+<script>
+    let selectedColor = 'white';
+    const portSelect = document.getElementById('port');
+    const connectionStatus = document.getElementById('connectionStatus');
+    const output = document.getElementById('output');
+
+    function setStatus(message, good = false) {
+        connectionStatus.textContent = message;
+        connectionStatus.className = `status ${good ? 'good' : ''}`;
+    }
+
+    function showResult(data) {
+        output.textContent = data.output || data.error || 'Command accepted without controller output.';
+        if (data.connection) updateConnection(data.connection);
+        if (!data.success) setStatus(data.error || 'Command failed');
+    }
+
+    function updateConnection(connection) {
+        const connected = Boolean(connection.connected);
+        document.getElementById('connectButton').disabled = connected;
+        document.getElementById('disconnectButton').disabled = !connected;
+        document.getElementById('firmwareButton').disabled = !connected;
+        document.querySelectorAll('.layout section:not(.connection) button, .layout section:not(.connection) input').forEach(control => {
+            if (control.id !== 'teamNumber' && control.id !== 'eventYear' && control.id !== 'eventSelect') {
+                control.disabled = !connected;
+            }
+        });
+        document.getElementById('postScoresButton').disabled = !connected || !document.getElementById('eventSelect').value;
+        setStatus(connected ? `Connected to ${connection.port}` : 'Disconnected', connected);
+    }
+
+    async function refreshPorts() {
+        try {
+            const response = await fetch('/ports');
+            const data = await response.json();
+            portSelect.replaceChildren();
+            data.ports.forEach(port => {
+                const option = document.createElement('option');
+                option.value = port.device;
+                option.textContent = `${port.device} - ${port.description || 'Serial device'}`;
+                portSelect.appendChild(option);
+            });
+            if (!data.ports.length) setStatus('No serial ports found');
+            else if (!data.connection.connected) setStatus('Select the Arduino port and connect');
+            updateConnection(data.connection);
+        } catch (error) { setStatus(`Could not list ports: ${error}`); }
+    }
+
+    async function connectArduino() {
+        if (!portSelect.value) return setStatus('Select a serial port first');
+        const response = await fetch('/connect', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({port: portSelect.value}) });
+        showResult(await response.json());
+    }
+
+    async function disconnectArduino() {
+        const response = await fetch('/disconnect', { method: 'POST' });
+        showResult(await response.json());
+    }
+
+    async function updateFirmware() {
+        const button = document.getElementById('firmwareButton');
+        const board = document.getElementById('board').value;
+        button.disabled = true;
+        setStatus('Compiling and uploading firmware...');
+        try {
+            const response = await fetch('/firmware_update', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({board})
+            });
+            showResult(await response.json());
+        } catch (error) {
+            setStatus(`Firmware update failed: ${error}`);
+        } finally {
+            try {
+                const response = await fetch('/ping');
+                updateConnection((await response.json()).connection);
+            } catch (error) {
+                setStatus(`Could not refresh connection status: ${error}`);
+            }
+        }
+    }
+
+    async function sendAction(body) {
+        const response = await fetch('/command', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) });
+        showResult(await response.json());
+    }
+
+    async function loadTeamEvents() {
+        const teamNumber = document.getElementById('teamNumber').value.trim();
+        const year = document.getElementById('eventYear').value;
+        const response = await fetch('/team_events', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({team_num: teamNumber, year})
+        });
+        const data = await response.json();
+        if (!data.success) return setStatus(data.error || 'Could not load events');
+        const eventSelect = document.getElementById('eventSelect');
+        eventSelect.replaceChildren();
+        data.events.forEach(event => {
+            const option = document.createElement('option');
+            option.value = event.key;
+            option.textContent = `${event.name} (${event.start_date})`;
+            eventSelect.appendChild(option);
+        });
+        eventSelect.disabled = !data.events.length;
+        document.getElementById('postScoresButton').disabled = !data.events.length || !connectionStatus.classList.contains('good');
+        setStatus(data.events.length ? `${data.events.length} event(s) found` : 'No events found');
+    }
+
+    async function postScores() {
+        const eventKey = document.getElementById('eventSelect').value;
+        if (!eventKey) return setStatus('Select an event first');
+        const button = document.getElementById('postScoresButton');
+        button.disabled = true;
+        const response = await fetch('/post_scores', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({event_key: eventKey, show_ranks: document.getElementById('showRanks').checked})
+        });
+        const data = await response.json();
+        showResult(data);
+        if (data.success) setStatus(`Posted ${data.matches} qualification match(es)`, true);
+        button.disabled = !connectionStatus.classList.contains('good');
+    }
+
+    function sendMode(mode) { sendAction({action: 'mode', mode}); }
+    function sendBrightness(command) { sendAction({action: 'brightness', command}); }
+    function selectColor(color) {
+        selectedColor = color;
+        document.getElementById('selectedColor').textContent = color;
+        document.querySelectorAll('[data-color]').forEach(button => button.classList.toggle('active', button.dataset.color === color));
+        sendAction({action: 'color', color});
+    }
+    function sendText(event) {
+        event.preventDefault();
+        const message = document.getElementById('message').value.trim();
+        if (!message) return setStatus('Enter a message first');
+        sendAction({action: 'text', text: message, color: selectedColor});
+        document.getElementById('message').value = '';
+    }
+    function cancelDisplay() { sendAction({action: 'cancel'}); }
+
+    refreshPorts();
+</script>
+</body>
+</html>
