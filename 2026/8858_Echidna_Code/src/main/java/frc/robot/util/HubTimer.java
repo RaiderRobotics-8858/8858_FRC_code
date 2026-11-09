@@ -4,6 +4,8 @@ import java.util.Optional;
 
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.RobotBase;
+import swervelib.simulation.ironmaple.simulation.SimulatedArena;
 
 // https://docs.wpilib.org/en/stable/docs/yearly-overview/2026-game-data.html
 // https://firstfrc.blob.core.windows.net/frc2026/Manual/2026GameManual.pdf
@@ -23,18 +25,20 @@ import edu.wpi.first.wpilibj.DriverStation.Alliance;
 public class HubTimer {
     /**
      * returns true if your alliance's hub is active
-     * 
+     *
      * @return
      */
     public static boolean isActive() {
         Optional<Alliance> alliance = DriverStation.getAlliance();
         if (alliance.isEmpty()) // no DS or FMS connected
             return true;
-        if (DriverStation.isAutonomousEnabled()) // short-circuit for auton
+        if (DriverStation.isAutonomousEnabled()) { // short-circuit for auton
+            trackAutoScores();
             return true;
+        }
 
         double matchTime = DriverStation.getMatchTime(); // seconds remaining in match period
-        String gameData = DriverStation.getGameSpecificMessage(); // "R", "B" or ""
+        String gameData = getGameData(); // "R", "B" or ""
         Alliance firstShift = Alliance.Blue; // which alliance is active in shift 1
 
         if (gameData.isEmpty()) {
@@ -48,7 +52,7 @@ public class HubTimer {
         }
         if (matchTime == -1)
             return true;
-        
+
         if (matchTime > time(2, 10)) // transition shift
             return true;
         else if (matchTime > time(1, 45)) // shift 1
@@ -64,7 +68,7 @@ public class HubTimer {
     }
     /**
      * returns true if your alliance's hub is active
-     * 
+     *
      * @return
      */
     public static boolean isActive2sEarly() {
@@ -75,7 +79,7 @@ public class HubTimer {
             return true;
 
         double matchTime = DriverStation.getMatchTime(); // seconds remaining in match period
-        String gameData = DriverStation.getGameSpecificMessage(); // "R", "B" or ""
+        String gameData = getGameData(); // "R", "B" or ""
         Alliance firstShift = Alliance.Blue; // which alliance is active in shift 1
 
         if (gameData.isEmpty()) {
@@ -89,7 +93,7 @@ public class HubTimer {
         }
         if (matchTime == -1)
             return true;
-        
+
         if (matchTime > time(2, 10)) // transition shift
             return true;
         else if (matchTime > time(1, 47)) // shift 1
@@ -105,7 +109,7 @@ public class HubTimer {
     }
     /**
      * returns true if your alliance's hub is active
-     * 
+     *
      * @return
      */
     public static boolean isActive5sEarly() {
@@ -116,7 +120,7 @@ public class HubTimer {
             return true;
 
         double matchTime = DriverStation.getMatchTime(); // seconds remaining in match period
-        String gameData = DriverStation.getGameSpecificMessage(); // "R", "B" or ""
+        String gameData = getGameData(); // "R", "B" or ""
         Alliance firstShift = Alliance.Blue; // which alliance is active in shift 1
 
         if (gameData.isEmpty()) {
@@ -130,7 +134,7 @@ public class HubTimer {
         }
         if (matchTime == -1)
             return true;
-        
+
         if (matchTime > time(2, 10)) // transition shift
             return true;
         else if (matchTime > time(1, 50)) // shift 1
@@ -143,6 +147,34 @@ public class HubTimer {
             return alliance.get() != firstShift;
         else // end game
             return true;
+    }
+
+    private static int simAutoBlueScore = 0;
+    private static int simAutoRedScore = 0;
+
+    /** Simulation only: remembers the arena scores while autonomous runs, so they're final when it ends. */
+    private static void trackAutoScores() {
+        if (RobotBase.isSimulation()) {
+            var arena = SimulatedArena.getInstance();
+            simAutoBlueScore = arena.getScore(Alliance.Blue);
+            simAutoRedScore = arena.getScore(Alliance.Red);
+        }
+    }
+
+    /**
+     * The game-specific message, or in simulation with none set, "R"/"B" for whichever alliance
+     * scored more in autonomous (empty on a tie or if no auto was run).
+     */
+    private static String getGameData() {
+        String gameData = DriverStation.getGameSpecificMessage();
+        if (gameData.isEmpty() && RobotBase.isSimulation()) {
+            if (simAutoRedScore > simAutoBlueScore) {
+                return "R";
+            } else if (simAutoBlueScore > simAutoRedScore) {
+                return "B";
+            }
+        }
+        return gameData;
     }
 
     /** helper method for readability */

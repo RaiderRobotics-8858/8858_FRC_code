@@ -358,3 +358,6 @@ compile_commands.json
 /examples/swerve_drive_maplesim/.idea
 /examples/swerve_drive/.idea
 /examples/swerve_drive/.idea
+
+# Large robot model; commit the .glb.gz instead (see advantagescope_assets\glb_pack.py)
+advantagescope_assets/**/*.glb

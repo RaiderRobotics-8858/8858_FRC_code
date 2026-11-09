@@ -41,6 +41,7 @@ public class LauncherSubsystem extends SubsystemBase {
      * Indicates when the Turret is at the target angle within a threshold.
      */
     private boolean turretAtTarget = false;
+    private double turretTargetDegrees = 0.0;
 
     /**
      * Need to know robot pose to calculate turret angle to target,
@@ -263,6 +264,41 @@ public class LauncherSubsystem extends SubsystemBase {
         return launchMotor.getEncoder().getVelocity();
     }
 
+    private frc.robot.util.LauncherSimulation launcherSim;
+
+    /** Enables the simulated launcher, which draws fuel from the intake's simulated hopper. */
+    public void setupSimulation(swervelib.SwerveDrive swerveDrive, IntakeSubsystem intake) {
+        if (!edu.wpi.first.wpilibj.RobotBase.isSimulation()) {
+            return;
+        }
+        var sim = new frc.robot.util.LauncherSimulation(swerveDrive, intake);
+        launcherSim = sim.isAvailable() ? sim : null;
+    }
+
+    /** Fires simulated fuel at the target; does nothing on a real robot. */
+    public void simulateLaunch(AimPoints target) {
+        if (launcherSim != null) {
+            launcherSim.tryLaunch(target);
+        }
+    }
+
+    @Override
+    public void simulationPeriodic() {
+        if (launcherSim != null) {
+            launcherSim.update();
+        }
+    }
+
+    /** Whether the simulated launcher is active (simulation only). */
+    public boolean isSimLauncherActive() {
+        return launcherSim != null;
+    }
+
+    /** Total fuel fired by the simulated launcher. */
+    public int getSimLaunchedCount() {
+        return launcherSim != null ? launcherSim.getLaunchedCount() : 0;
+    }
+
     public void setHoodSpeed(double speed){
         hoodMotor.set(speed);
     }
@@ -345,6 +381,13 @@ public class LauncherSubsystem extends SubsystemBase {
     }
 
     /**
+     * Last commanded turret angle in degrees after bounds checks.
+     */
+    public double getTurretTargetDegrees() {
+        return turretTargetDegrees;
+    }
+
+    /**
      * Uses PID control to move turret to desired angle
      * @param targetAngle The desired turret angle to move to
      */
@@ -363,6 +406,8 @@ public class LauncherSubsystem extends SubsystemBase {
         ){
             targetAngle = 0.0;
         }
+
+        turretTargetDegrees = targetAngle;
 
         double angleSpeed = anglePIDController.calculate(getTurretAngleDegrees(), targetAngle);
         angleSpeed = MathUtil.clamp(angleSpeed, -Constants.TURRET_MAX_SPEED, Constants.TURRET_MAX_SPEED);

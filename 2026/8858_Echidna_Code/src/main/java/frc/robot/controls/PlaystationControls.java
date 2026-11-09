@@ -12,6 +12,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
+import edu.wpi.first.wpilibj2.command.button.CommandPS5Controller;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants;
@@ -33,7 +34,7 @@ import frc.robot.util.HubTimer;
 import frc.robot.subsystems.ClimberSubsystem;
 import swervelib.SwerveInputStream;
 
-public class DriverControls {
+public class PlaystationControls {
 private static boolean hubActive = false;
     public static void configure(
         int controllerPort,
@@ -44,7 +45,7 @@ private static boolean hubActive = false;
         LEDSubsystem ledSubsystem,
         ClimberSubsystem climberSubsystem
     ) {
-        CommandXboxController controller = new CommandXboxController(controllerPort);
+        CommandPS5Controller controller = new CommandPS5Controller(controllerPort);
 
         // Rotates driver translation inputs for alternate POV driving modes.
         // When enabled, offsets are alliance-based: +90° for Blue, -90° for Red.
@@ -167,25 +168,17 @@ private static boolean hubActive = false;
 
         if (DriverStation.isTest()) {
 
-            controller.b().whileTrue(drivetrain.centerModulesCommand());
-            controller.x().whileTrue(Commands.runOnce(drivetrain::lock, drivetrain).repeatedly());
-            controller.y().onTrue((Commands.runOnce(drivetrain::zeroGyro)));
+            controller.circle().whileTrue(drivetrain.centerModulesCommand());
+            controller.square().whileTrue(Commands.runOnce(drivetrain::lock, drivetrain).repeatedly());
+            controller.triangle().onTrue((Commands.runOnce(drivetrain::zeroGyro)));
 
-            controller.start().whileTrue(drivetrain.sysIdAngleMotorCommand());
-            controller.back().whileTrue(drivetrain.sysIdDriveMotorCommand());
-        } else if (Robot.isSimulation()) {
-            // Fire fuel 10 times per second while button is held
-            controller.back().whileTrue(
-                Commands.repeatingSequence(
-                    fireFuel(drivetrain /*, superstructure */),
-                    Commands.waitSeconds(0.1)
-                )
-            );
+            controller.options().whileTrue(drivetrain.sysIdAngleMotorCommand());
+            controller.touchpad().whileTrue(drivetrain.sysIdDriveMotorCommand());
         } else {
 
             // Alternate drive mode for viewing field video from the opposite side.
             // pressing both sticks toggles alliance-based rotation (+90° Blue, -90° Red).
-            controller.leftStick().and(controller.rightStick()).onTrue(
+            controller.L3().and(controller.R3()).onTrue(
                 Commands.sequence(
                     Commands.runOnce(() -> {
                         isAlternatePovEnabled[0] = !isAlternatePovEnabled[0];
@@ -193,6 +186,8 @@ private static boolean hubActive = false;
                             "Driver POV Mode",
                             isAlternatePovEnabled[0] ? "Normal" : "Screen"
                         );
+                        // Simulation: moves the AdvantageScope camera to the livestream side view
+                        SmartDashboard.putBoolean("Sim/LivestreamView", isAlternatePovEnabled[0]);
                     }),
                     new rumbleController(
                         controller.getHID(),
@@ -210,10 +205,10 @@ private static boolean hubActive = false;
             );
 
             // Software Reset
-            controller.start().onTrue((Commands.runOnce(drivetrain::zeroGyro)));
+            controller.options().onTrue((Commands.runOnce(drivetrain::zeroGyro)));
 
             // command to launch Fuel
-            controller.rightTrigger(0.6).whileTrue(
+            controller.R2().whileTrue(
                 new launchCommand(
                     launcherSubsystem,
                     hopperSubsystem,
@@ -232,43 +227,43 @@ private static boolean hubActive = false;
             );
 
             // move the hood down
-            controller.povDown().and(controller.a()).onTrue(
+            controller.povDown().and(controller.cross()).onTrue(
                 new moveHoodtoPos(launcherSubsystem, Constants.HOOD_LOW_LIMIT)
             );
 
             // move the hood down
-            controller.povDown().and(controller.b()).onTrue(
+            controller.povDown().and(controller.circle()).onTrue(
                 new moveHoodtoPos(launcherSubsystem, Constants.HOOD_HIGH_LIMIT)
             );
             // Puts the intake arm all the way up.
-            controller.x().onTrue(
+            controller.square().onTrue(
                 new activateIntake(intakeSubsystem,
                 Constants.INTAKE_ARM_RAISED,
                 0)
             );
 
             // Lower climber to preset position
-            controller.leftBumper().onFalse(
+            controller.L1().onFalse(
                 new setclimberpos(climberSubsystem, 0)
             );
 
             // Lower climber to preset position
-            controller.rightBumper().onFalse(
+            controller.R2().onFalse(
                 new setclimberpos(climberSubsystem, Constants.CLIMB_LOWER_POS)
             );
 
             // Raise climber to preset position
-            controller.rightBumper().or(controller.leftBumper()).onTrue(
+            controller.R2().or(controller.L1()).onTrue(
                 new setclimberpos(climberSubsystem, Constants.CLIMB_EXTENDED_POS)
             );
 
             // Field-oriented drive at reduced speed for precision control while the right bumper is held
-            controller.rightBumper().or(controller.rightTrigger(0.6)).whileTrue(
+            controller.R2().or(controller.R2()).whileTrue(
                 drivetrain.driveFieldOriented(driveInputStreamSlow).withName("Drive" + ".test")
             );
 
             // Oil Spill Mode for Intake and Hopper
-            controller.back().whileTrue(
+            controller.touchpad().whileTrue(
                 new ParallelCommandGroup(
                     new activateIntake(
                         intakeSubsystem,
@@ -283,7 +278,7 @@ private static boolean hubActive = false;
             );
 
             // Default intake mode is active
-            controller.leftTrigger(0.6).whileFalse(
+            controller.L2().whileFalse(
                 new activateIntake(
                     intakeSubsystem,
                     Constants.INTAKE_ARM_LOWERED,
@@ -292,7 +287,7 @@ private static boolean hubActive = false;
             );
 
             // Raises the intake arm
-            controller.leftTrigger(0.6).whileTrue(
+            controller.L2().whileTrue(
                 new activateIntake(
                     intakeSubsystem,
                     Constants.INTAKE_ARM_RAISED,
@@ -301,19 +296,19 @@ private static boolean hubActive = false;
             );
 
             // Begin Color Modes
-            controller.povUp().and(controller.a()).onTrue(
+            controller.povUp().and(controller.cross()).onTrue(
                 ledSubsystem.larsonWithColor(new RGBWColor(Color.kGreen))
             );
 
-            controller.povUp().and(controller.b()).onTrue(
+            controller.povUp().and(controller.circle()).onTrue(
                 ledSubsystem.larsonWithColor(new RGBWColor(Color.kRed))
             );
 
-            controller.povUp().and(controller.x()).onTrue(
+            controller.povUp().and(controller.square()).onTrue(
                 ledSubsystem.larsonWithColor(new RGBWColor(Color.kBlue))
             );
 
-            controller.povUp().and(controller.y()).onTrue(
+            controller.povUp().and(controller.triangle()).onTrue(
                 ledSubsystem.larsonWithColor(new RGBWColor(Color.kYellow))
             );
             // End Color Modes

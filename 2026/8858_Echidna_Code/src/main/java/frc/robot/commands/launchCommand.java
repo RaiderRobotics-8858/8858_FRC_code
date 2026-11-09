@@ -18,6 +18,7 @@ public class launchCommand extends Command {
     private final LEDSubsystem ledSubsystem;
     private boolean hit_speed_flag;
     private boolean lastLaunchOutputState;
+    private int lastSimLaunchCount;
 
     /**
      * Creates a command to launch fuel at a specified target speed and pose.
@@ -41,11 +42,17 @@ public class launchCommand extends Command {
         launcherSubsystem.resetPID(); // Reset PID controllers for speed and angle
         hit_speed_flag = false;
         lastLaunchOutputState = true;
+        lastSimLaunchCount = launcherSubsystem.getSimLaunchedCount();
+        if (launcherSubsystem.isSimLauncherActive()) {
+            // Start the "no fuel" timer fresh so a stale stamp can't end the command early
+            SmartDashboard.putNumber("Launcher/Time Since Last Fuel", DriverStation.getMatchTime());
+        }
     }
 
     @Override
     public void execute() {
         AimPoints target = launcherSubsystem.findTarget();
+        launcherSubsystem.simulateLaunch(target);
 
         double targetSpeed = launcherSubsystem.getTargetLaunchSpeed(target);
         launcherSubsystem.setLaunchSpeed(targetSpeed); // Set launch motors to maintain target speed
@@ -72,6 +79,18 @@ public class launchCommand extends Command {
         }
 
         // Keep track of how long its been since Fuel was launched
+        if (launcherSubsystem.isSimLauncherActive()) {
+            // Simulation: stamp the time whenever a simulated fuel leaves the robot
+            int simCount = launcherSubsystem.getSimLaunchedCount();
+            if (simCount != lastSimLaunchCount) {
+                SmartDashboard.putNumber("Launcher/Time Since Last Fuel", DriverStation.getMatchTime());
+                SmartDashboard.putNumber("Launcher/Fuel Launched",
+                    SmartDashboard.getNumber("Launcher/Fuel Launched", 0) + (simCount - lastSimLaunchCount));
+                lastSimLaunchCount = simCount;
+            }
+            return;
+        }
+
         if (!launcherSubsystem.getLaunchOutput()){
             SmartDashboard.putNumber("Launcher/Time Since Last Fuel", DriverStation.getMatchTime());
         }

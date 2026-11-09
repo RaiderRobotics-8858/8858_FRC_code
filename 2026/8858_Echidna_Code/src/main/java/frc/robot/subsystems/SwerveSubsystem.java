@@ -7,6 +7,8 @@ package frc.robot.subsystems;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.DoubleSupplier;
@@ -35,6 +37,10 @@ import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.geometry.Translation3d;
+import edu.wpi.first.math.geometry.Transform3d;
+import edu.wpi.first.apriltag.AprilTagFieldLayout;
+import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.trajectory.Trajectory;
@@ -62,6 +68,7 @@ import limelight.networktables.LimelightSettings.ImuMode;
 import limelight.networktables.LimelightSettings.LEDMode;
 import limelight.networktables.Orientation3d;
 import limelight.networktables.PoseEstimate;
+import swervelib.simulation.ironmaple.simulation.SimulatedArena;
 import swervelib.SwerveController;
 import swervelib.SwerveDrive;
 import swervelib.SwerveDriveTest;
@@ -191,10 +198,41 @@ public class SwerveSubsystem extends SubsystemBase {
     }
 
     setupPathPlanner();
+
+    if (SwerveDriveTelemetry.isSimulation) {
+      if (SimulatedArena.getInstance()
+          instanceof
+          swervelib.simulation.ironmaple.simulation.seasonspecific.rebuilt2026.Arena2026Rebuilt
+              rebuilt) {
+        rebuilt.setEfficiencyMode(frc.robot.Constants.SIM_EFFICIENCY_MODE);
+      }
+      simStartingFuel.setDefault(frc.robot.Constants.SIM_STARTING_FUEL);
+      resetSimField();
+      SmartDashboard.putData(
+          "Sim/Reset Field",
+          Commands.runOnce(
+                  () -> {
+                    resetSimField();
+                    simResetActions.forEach(Runnable::run);
+                    swerveDrive.resetOdometry(
+                        new edu.wpi.first.math.geometry.Pose2d(
+                            2, 4, new edu.wpi.first.math.geometry.Rotation2d()));
+                  })
+              .ignoringDisable(true)
+              .withName("Reset Field"));
+    }
+  }
+
+  private final List<Runnable> simResetActions = new ArrayList<>();
+
+  /** Registers extra work to run when the simulation "Reset Field" button is pressed. */
+  public void addSimResetAction(Runnable action) {
+    simResetActions.add(action);
   }
 
   @Override
   public void periodic() {
+    swerveDrive.updateOdometry();
 
     if (IS_LIMELIGHT_ENABLED && SmartDashboard.getBoolean("USELIMELIGHT", true)) {
       // Get MegaTag2 pose
@@ -227,8 +265,145 @@ public class SwerveSubsystem extends SubsystemBase {
     }
   }
 
+  // Limelight mounting, mirrors withCameraOffset() above. Limelight pitch is positive-up,
+  // WPILib's is positive-down, so the pitch is negated here.
+  private static final Transform3d LL_ROBOT_TO_CAMERA = new Transform3d(
+      new Translation3d(Inches.of(11.375).in(Meters), Inches.of(9.983).in(Meters), Inches.of(5).in(Meters)),
+      new Rotation3d(0, -Degrees.of(27).in(Radians), 0));
+  // Approximate Limelight 3-class field of view; adjust to match the actual model.
+  private static final double LL_HFOV_RAD = Math.toRadians(63.3);
+  private static final double LL_VFOV_RAD = Math.toRadians(49.7);
+  private static final double LL_MAX_TAG_DISTANCE_M = 6.0;
+  private final AprilTagFieldLayout tagLayout = AprilTagFieldLayout.loadField(AprilTagFields.kDefaultField);
+
+  // AdvantageScope "Camera Override" geometry. Station spacing and the 1.5 m / 62 in camera
+  // placement mirror AdvantageScope's own Driver Station camera.
+  private static final double SIM_FIELD_LENGTH_M = 16.5405;
+  private static final double SIM_FIELD_CENTER_Y_M = 4.0345;
+  private static final double SIM_STATION_SPACING_M = Inches.of(69).in(Meters);
+  private static final double SIM_DS_CAMERA_BACK_M = 1.5;
+  private static final double SIM_DS_CAMERA_HEIGHT_M = Inches.of(62).in(Meters);
+  private static final Translation3d SIM_SIDE_CAMERA = new Translation3d(SIM_FIELD_LENGTH_M / 2, -8.0, 8.0);
+
+  /** Camera pose for AdvantageScope: the selected Driver Station, or a side view when toggled. */
+  private Pose3d getSimCameraPose() {
+    Translation3d fieldCenter = new Translation3d(SIM_FIELD_LENGTH_M / 2, SIM_FIELD_CENTER_Y_M, 0.0);
+    Translation3d position;
+    if (SmartDashboard.getBoolean("Sim/LivestreamView", false)) {
+      position = SIM_SIDE_CAMERA;
+    } else {
+      boolean red = DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue) == DriverStation.Alliance.Red;
+      int station = DriverStation.getLocation().orElse(2);
+      // Station 1 is on the driver's left, so it sits on +y for blue and -y for red.
+      // Shifted one slot from AdvantageScope's default spacing to line up with the field model.
+      // The 2026 station wall is ordered 1, 2, (divider), 3, so station 3 skips the divider slot
+      double slot = station == 3 ? -1 : (3 - station);
+      double offset = slot * SIM_STATION_SPACING_M * (red ? -1 : 1);
+      position = new Translation3d(
+          red ? SIM_FIELD_LENGTH_M + SIM_DS_CAMERA_BACK_M : -SIM_DS_CAMERA_BACK_M,
+          SIM_FIELD_CENTER_Y_M + offset,
+          SIM_DS_CAMERA_HEIGHT_M);
+    }
+    Translation3d toTarget = fieldCenter.minus(position);
+    double yaw = Math.atan2(toTarget.getY(), toTarget.getX());
+    double pitch = Math.atan2(-toTarget.getZ(), Math.hypot(toTarget.getX(), toTarget.getY()));
+    return new Pose3d(position, new Rotation3d(0, pitch, yaw));
+  }
+
+  /** Starting fuel count, published as an integer so dashboards show a whole number. */
+  private static final edu.wpi.first.networktables.IntegerEntry simStartingFuel =
+      edu.wpi.first.networktables.NetworkTableInstance.getDefault()
+          .getTable("SmartDashboard")
+          .getIntegerTopic("Sim/Starting Fuel")
+          .getEntry(frc.robot.Constants.SIM_STARTING_FUEL);
+
+  /** Resets the arena, then adds fuel in the neutral zone until the starting count is reached. */
+  private static void resetSimField() {
+    var arena = SimulatedArena.getInstance();
+    arena.resetFieldForAuto();
+    int target = (int) simStartingFuel.get(frc.robot.Constants.SIM_STARTING_FUEL);
+    int missing = target - arena.getGamePiecesPosesByType("Fuel").size();
+    if (missing <= 0) {
+      return;
+    }
+    // Fill the gaps within each neutral-zone row (fuel are ~0.45 m apart in a row), reusing the
+    // default layout's rows so spacing matches. Nearest to center first.
+    double cx = SIM_FIELD_LENGTH_M / 2.0;
+    double cy = SIM_FIELD_CENTER_Y_M;
+    var center = new edu.wpi.first.math.geometry.Translation2d(cx, cy);
+    var rows = new java.util.TreeMap<Long, java.util.List<edu.wpi.first.math.geometry.Translation2d>>();
+    for (var pose : arena.getGamePiecesPosesByType("Fuel")) {
+      var t = pose.getTranslation().toTranslation2d();
+      if (Math.abs(t.getX() - cx) < 3.0 && Math.abs(t.getY() - cy) < 4.0) {
+        rows.computeIfAbsent(Math.round(t.getX() * 20), k -> new java.util.ArrayList<>()).add(t);
+      }
+    }
+    var candidates = new java.util.ArrayList<edu.wpi.first.math.geometry.Translation2d>();
+    for (var row : rows.values()) {
+      row.sort(java.util.Comparator.comparingDouble(t -> t.getY()));
+      for (int i = 0; i + 1 < row.size(); i++) {
+        candidates.add(
+            new edu.wpi.first.math.geometry.Translation2d(
+                row.get(i).getX(), (row.get(i).getY() + row.get(i + 1).getY()) / 2.0));
+      }
+    }
+    candidates.sort(java.util.Comparator.comparingDouble(c -> c.getDistance(center)));
+    for (var spot : candidates) {
+      if (missing-- <= 0) {
+        break;
+      }
+      arena.addGamePiece(
+          new swervelib.simulation.ironmaple.simulation.seasonspecific.rebuilt2026
+              .RebuiltFuelOnField(spot));
+    }
+  }
+
   @Override
   public void simulationPeriodic() {
+    Logger.recordOutput("FieldSimulation/CameraOverride", getSimCameraPose());
+    // MapleSim keeps the last commanded speeds when commands are cancelled on disable
+    if (DriverStation.isDisabled()) {
+      swerveDrive.drive(new edu.wpi.first.math.kinematics.ChassisSpeeds());
+    }
+    // Published for AdvantageScope's 3D field view.
+    swerveDrive.getSimulationDriveTrainPose().ifPresent(pose -> {
+      Logger.recordOutput("FieldSimulation/RobotPose", pose);
+
+      Pose3d cameraPose = new Pose3d(pose).transformBy(LL_ROBOT_TO_CAMERA);
+      Logger.recordOutput("FieldSimulation/LimelightPose", cameraPose);
+
+      // Approximate detection: tags inside the camera's view cone and range (no occlusion).
+      List<Pose3d> visibleTags = new ArrayList<>();
+      for (var tag : tagLayout.getTags()) {
+        Translation3d rel = tag.pose.relativeTo(cameraPose).getTranslation();
+        double dist = rel.getNorm();
+        if (rel.getX() > 0
+            && dist < LL_MAX_TAG_DISTANCE_M
+            && Math.abs(Math.atan2(rel.getY(), rel.getX())) < LL_HFOV_RAD / 2
+            && Math.abs(Math.atan2(rel.getZ(), rel.getX())) < LL_VFOV_RAD / 2) {
+          visibleTags.add(tag.pose);
+        }
+      }
+      Logger.recordOutput("FieldSimulation/VisibleTags", visibleTags.toArray(new Pose3d[0]));
+      Logger.recordOutput("FieldSimulation/VisibleTagCount", visibleTags.size());
+
+      // With a tag in view, snap the odometry estimate to the true simulated pose. Only the
+      // estimator is reset; swerveDrive.resetOdometry would also teleport the physics body.
+      if (!visibleTags.isEmpty()) {
+        swerveDrive.swerveDrivePoseEstimator.resetPosition(
+            swerveDrive.getYaw(), swerveDrive.getModulePositions(), pose);
+      }
+    });
+    Logger.recordOutput("FieldSimulation/Fuel",
+        SimulatedArena.getInstance().getGamePiecesArrayByType("Fuel"));
+    Logger.recordOutput("FieldSimulation/FuelOnField",
+        SimulatedArena.getInstance().getGamePiecesPosesByType("Fuel").size());
+    Logger.recordOutput("FieldSimulation/FuelInFlight",
+        SimulatedArena.getInstance().gamePieceLaunched().size());
+    Logger.recordOutput("FieldSimulation/BlueScore",
+        SimulatedArena.getInstance().getScore(DriverStation.Alliance.Blue));
+    Logger.recordOutput("FieldSimulation/RedScore",
+        SimulatedArena.getInstance().getScore(DriverStation.Alliance.Red));
   }
 
   /**

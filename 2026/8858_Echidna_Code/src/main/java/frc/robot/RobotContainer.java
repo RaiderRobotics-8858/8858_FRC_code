@@ -28,13 +28,14 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.commands.activateIntake;
 import frc.robot.commands.launchCommand;
 import frc.robot.commands.setclimberpos;
-import frc.robot.controls.DriverControls;
+import frc.robot.controls.PlaystationControls;
 import frc.robot.subsystems.HopperSubsystem;
 import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.LEDSubsystem;
 import frc.robot.subsystems.LauncherSubsystem;
 import frc.robot.subsystems.SwerveSubsystem;
 import frc.robot.util.HubTimer;
+import frc.robot.util.EchidnaKinematicLogger;
 import frc.robot.subsystems.ClimberSubsystem;
 import swervelib.SwerveDrive;
 
@@ -49,6 +50,8 @@ public class RobotContainer {
     private final IntakeSubsystem intakeSubsystem = new IntakeSubsystem();
     private final LEDSubsystem ledSubsystem = new LEDSubsystem();
     private final ClimberSubsystem climberSubsystem = new ClimberSubsystem();
+    private final EchidnaKinematicLogger kinematicLogger =
+        new EchidnaKinematicLogger(drive, intakeSubsystem, launcherSubsystem);
 
     private SendableChooser<Command> autoChooser;
 
@@ -59,6 +62,9 @@ public class RobotContainer {
     {
         // Configure the trigger bindings
         configureBindings();
+        intakeSubsystem.setupSimulation(drive.getSwerveDrive());
+        drive.addSimResetAction(intakeSubsystem::clearSimFuel);
+        launcherSubsystem.setupSimulation(drive.getSwerveDrive(), intakeSubsystem);
         // buildNamedAutoCommands();
 
         // Initialize alliance (default to red if not present)
@@ -157,7 +163,16 @@ public class RobotContainer {
     }
 
     private void configureBindings(){
-        DriverControls.configure(
+        // XBoxControls.configure(
+        //   Constants.XBOX_CONTROLLER_PORT,
+        //   drive,
+        //   launcherSubsystem,
+        //   intakeSubsystem,
+        //   hopperSubsystem,
+        //   ledSubsystem,
+        //   climberSubsystem
+        // );
+        PlaystationControls.configure(
           Constants.XBOX_CONTROLLER_PORT,
           drive,
           launcherSubsystem,
@@ -249,6 +264,10 @@ public class RobotContainer {
     }
 
     public void periodic() {
+        // Pose topics for articulated AdvantageScope assets in
+        // advantagescope_assets/Echidna_Kinematic/{Chassis,Intake,Turret}.glb
+        kinematicLogger.log();
+
         // Launcher stats
         SmartDashboard.putNumber("Launcher/LaunchSpeed", launcherSubsystem.getLaunchSpeed());
         SmartDashboard.putNumber("Launcher/TurretAngle", launcherSubsystem.getTurretAngleDegrees());
