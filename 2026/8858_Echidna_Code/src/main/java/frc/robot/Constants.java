@@ -89,6 +89,51 @@ public class Constants {
     public static final double INTAKE_ARM_HALF_RAISED = 0.60;
     public static final double INTAKE_ARM_RAISED = 0.40;
     public static final double INTAKE_ROLLER_SPEED = 1.0;
+
+    // Simulation-only intake zone (adjust to match the real intake)
+    public static final double SIM_INTAKE_WIDTH_INCHES = 24;
+    public static final double SIM_INTAKE_EXTENSION_INCHES = 8;
+    public static final swervelib.simulation.ironmaple.simulation.IntakeSimulation.IntakeSide SIM_INTAKE_SIDE =
+        swervelib.simulation.ironmaple.simulation.IntakeSimulation.IntakeSide.BACK;
+    public static final int SIM_HOPPER_CAPACITY = 48;
+
+    // Where held fuel is drawn inside the robot (meters, robot-relative: x forward, y left, z up)
+    public static final double SIM_HOPPER_CENTER_X = -0.3;
+    public static final double SIM_HOPPER_CENTER_Y = 0.0;
+    public static final double SIM_HOPPER_FLOOR_Z = 0.2;
+    public static final int SIM_HOPPER_COLUMNS = 4;
+    public static final int SIM_HOPPER_ROWS = 4;
+    public static final double SIM_FUEL_SPACING_METERS = 0.15;
+    // Rear roller position where fuel enters, and how long the fly-in takes
+    public static final double SIM_INTAKE_MOUTH_X = -0.4;
+    public static final double SIM_INTAKE_MOUTH_Y = 0.0;
+    public static final double SIM_INTAKE_MOUTH_Z = 0.1;
+    public static final double SIM_FLY_IN_SECONDS = 0.35;
+
+    // Simulation-only launcher (turret at the front/center of the robot)
+    public static final double SIM_SHOOTER_X = 0.15;
+    public static final double SIM_SHOOTER_Y = 0.0;
+    public static final double SIM_SHOOTER_Z = 0.6;
+    public static final double SIM_HUB_PITCH_DEG = 65;
+    public static final double SIM_PASS_PITCH_DEG = 45;
+    public static final double SIM_MAX_LAUNCH_SPEED_MPS = 20;
+    public static final double SIM_LAUNCH_SPEED_SCALE = 1.1; // >1 launches faster; raise if shots land short
+    // Arena hub geometry used for sim aiming (blue hub center; red is mirrored across the field)
+    public static final double SIM_HUB_BLUE_X = 4.5974;
+    public static final double SIM_HUB_Y = 4.0345;
+    public static final double SIM_HUB_OPENING_Z = 1.9; // just above the 72 in rim
+    public static final double SIM_HUB_RIM_Z = 1.83; // fuel dropping below this over the opening scores
+    public static final double SIM_HUB_OPENING_RADIUS = 0.5;
+    public static final double SIM_HUB_HALF_WIDTH = 0.6; // hub body is 47 in square
+    public static final double SIM_HUB_EXIT_OFFSET = 0.85; // fuel re-emerges this far from hub center, clear of the walls
+    public static final double SIM_HUB_EXIT_Z = 0.5;
+    public static final double SIM_HUB_EXIT_SPEED = 2.0;
+    /** Arena efficiency mode: places roughly a third of the starting fuel to cut physics load. */
+    public static final boolean SIM_EFFICIENCY_MODE = true;
+    /** Fuel on the field after a reset; extra fuel is added in the neutral zone to reach it. */
+    public static final int SIM_STARTING_FUEL = 250;
+    public static final double SIM_FIELD_LENGTH_METERS = 16.5405;
+    public static final double SIM_LAUNCH_INTERVAL_SECONDS = 0.1;
     public static final double HOPPER_ROLLER_SPEED = 1.0;
 
     // Climber subsystem constants

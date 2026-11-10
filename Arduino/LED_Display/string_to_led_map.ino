@@ -3,6 +3,11 @@
 CRGB char_matrix [NUM_ROWS][WIDTH_CHAR];
 unsigned long lastStringUpdate;
 
+const char ARROW_UP = '\x01';
+const char ARROW_DOWN = '\x02';
+const char ARROW_LEFT = '\x03';
+const char ARROW_RIGHT = '\x04';
+
 const int char_patterns[][NUM_ROWS][WIDTH_CHAR] = {
     // 'A'
     {
@@ -572,6 +577,38 @@ const int char_patterns[][NUM_ROWS][WIDTH_CHAR] = {
         {0, 0, 1, 0, 0},
         {0, 1, 0, 0, 0}
     },
+    // ARROW_UP
+    {
+        {0, 0, 1, 0, 0},
+        {0, 1, 1, 1, 0},
+        {0, 0, 1, 0, 0},
+        {0, 0, 1, 0, 0},
+        {0, 0, 1, 0, 0}
+    },
+    // ARROW_DOWN
+    {
+        {0, 0, 1, 0, 0},
+        {0, 0, 1, 0, 0},
+        {0, 0, 1, 0, 0},
+        {0, 1, 1, 1, 0},
+        {0, 0, 1, 0, 0}
+    },
+    // ARROW_LEFT
+    {
+        {0, 0, 1, 0, 0},
+        {0, 1, 0, 0, 0},
+        {1, 1, 1, 1, 1},
+        {0, 1, 0, 0, 0},
+        {0, 0, 1, 0, 0}
+    },
+    // ARROW_RIGHT
+    {
+        {0, 0, 1, 0, 0},
+        {0, 0, 0, 1, 0},
+        {1, 1, 1, 1, 1},
+        {0, 0, 0, 1, 0},
+        {0, 0, 1, 0, 0}
+    },
     // (
     {
         {0, 0, 1, 0, 0},
@@ -587,6 +624,14 @@ const int char_patterns[][NUM_ROWS][WIDTH_CHAR] = {
         {0, 0, 0, 1, 0},
         {0, 0, 0, 1, 0},
         {0, 0, 1, 0, 0}
+    },
+    // ◇ (encoded as '~' on the serial protocol)
+    {
+        {0, 0, 0, 0, 0},
+        {0, 0, 1, 0, 0},
+        {0, 1, 0, 1, 0},
+        {0, 0, 1, 0, 0},
+        {0, 0, 0, 0, 0}
     },
     // ' ' (space)
     {
@@ -671,8 +716,13 @@ const char char_map[] = {
     '\"',
     ':',
     ';',
+    ARROW_UP,
+    ARROW_DOWN,
+    ARROW_LEFT,
+    ARROW_RIGHT,
     '(',
     ')',
+    '~',
     ' '
 };  // Must match the pattern order above!
 

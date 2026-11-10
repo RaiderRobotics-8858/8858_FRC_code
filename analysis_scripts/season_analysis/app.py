@@ -2,7 +2,6 @@ from flask import Flask, render_template, request, jsonify
 import plotly.graph_objects as go
 import plotly.utils
 import json
-import requests
 from tba_analysis.analysis_func import *
 
 app = Flask(__name__)
@@ -18,22 +17,17 @@ def get_team_events():
 
     # Get team events for the year
     team_events_endpoint = f"{BASE_URL}/team/frc{team_num}/events/{year}"
-    response = requests.get(team_events_endpoint, headers=headers)
-
-    if response.status_code == 200:
-        events = response.json()
-        event_list = []
-        for event in events:
-            event_list.append({
-                'key': event['key'],
-                'name': event['name'],
-                'start_date': event['start_date']
-            })
-        # Sort events by start date
-        event_list.sort(key=lambda x: x['start_date'])
-        return jsonify({'success': True, 'events': event_list})
-    else:
-        return jsonify({'success': False, 'error': f"Error {response.status_code}: {response.reason}"})
+    events = fetch_tba_json(team_events_endpoint)
+    event_list = []
+    for event in events:
+        event_list.append({
+            'key': event['key'],
+            'name': event['name'],
+            'start_date': event['start_date']
+        })
+    # Sort events by start date
+    event_list.sort(key=lambda x: x['start_date'])
+    return jsonify({'success': True, 'events': event_list})
 
 @app.route('/analyze', methods=['POST'])
 def analyze():

@@ -1,0 +1,49 @@
+name: Check Arduino Build
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'Arduino/LED_Display/**'
+      - '.github/workflows/check_build_arduino.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'Arduino/LED_Display/**'
+      - '.github/workflows/check_build_arduino.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build (${{ matrix.board-name }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - board-name: Uno R4 WiFi
+            core: arduino:renesas_uno
+            fqbn: arduino:renesas_uno:unor4wifi
+          - board-name: Nano ESP32
+            core: arduino:esp32
+            fqbn: arduino:esp32:nano_nora:PinNumbers=byGPIONumber
+    defaults:
+      run:
+        working-directory: Arduino/LED_Display
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Arduino CLI
+        uses: arduino/setup-arduino-cli@v2
+
+      - name: Install Arduino dependencies
+        run: |
+          arduino-cli core update-index
+          arduino-cli core install ${{ matrix.core }}
+          arduino-cli lib install FastLED@3.10.5
+
+      - name: Compile LED display sketch
+        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} .

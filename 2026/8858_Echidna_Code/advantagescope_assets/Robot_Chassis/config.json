@@ -1,0 +1,25 @@
+{
+  "name": "echidna_chassis",
+  "rotations": [
+    { "axis": "x", "degrees": 90 },
+    { "axis": "y", "degrees": 0 },
+    { "axis": "z", "degrees": 90 }
+  ],
+  "position": [0, 0, 0],
+  "cameras": [
+    {
+      "name": "Limelight",
+      "rotations": [{ "axis": "y", "degrees": -27 }],
+      "position": [0.2889, 0.2536, 0.127],
+      "resolution": [1280, 800],
+      "fov": 63.3
+    },
+    {
+      "name": "SimCamera",
+      "position": [0, 0, 0],
+      "resolution": [2560, 1440],
+      "fov": 80
+    }
+  ],
+  "components": []
+}

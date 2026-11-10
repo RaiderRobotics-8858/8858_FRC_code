@@ -3,50 +3,269 @@
 # Analysis Functions Library
 """
 
+import json
+import hashlib
 import requests
 import os
 import sys
 import datetime
+import shutil
+import time
 from pathlib import Path
+from colorama import Fore, Style, just_fix_windows_console
 
-dp_event_data = []
+just_fix_windows_console()
+
+CACHE_DIR = Path(__file__).resolve().parent / ".cache"
+_memory_cache = {}
 
 # Handle the API Key for The Blue Alliance
-try:
-    from tba_analysis.api_key import *
+def _create_api_key_file():
+    """Prompt for and save the API key for interactive analysis scripts."""
+    api_key_path = Path(__file__).resolve().parent / "api_key.py"
+    warning_msg("An API key was not found. Generate one at https://www.thebluealliance.com/account")
+    api_key = input("Enter your TBA API key (leave blank to add it later):").strip()
+    if not api_key:
+        api_key = "your_api_key_here"
+        warning_msg(f"API key left blank; add it later to {api_key_path}")
 
-    if API_KEY == "your_api_key_here":
-        print(f"ERROR : API_KEY does not look to be updated in {Path(__file__).resolve().parent}/api_key.py")
-        print(f"\tGenerate an API Key from https://www.thebluealliance.com/account and paste it into this file")
-        exit()
-
-    # Headers for the request
-    headers = {
-        "X-TBA-Auth-Key": API_KEY
-    }
-except ImportError:
-    print(f"An error occured while importing api_key.py, generating a blank copy to put your TBA API Key in")
-    print(f"To generate an API Key, go to https://www.thebluealliance.com/account then add a key under \"Read API Keys\"")
-    outfile = open(f"{Path(__file__).resolve().parent}/api_key.py", 'w')
-    api_key_in = input("Enter your API Key here (leave blank to manually enter the key later):")
-    if api_key_in == "":
-        api_key_in = "your_api_key_here"
-        print(f"INFO : API Key left blank to manually enter later to {Path(__file__).resolve().parent}/api_key.py")
-
-    outfile.write(
-f"""
-\"\"\"Your Key for [The Blue Alliance's API](https://www.thebluealliance.com/apidocs)\"\"\"
-
-API_KEY = \"{api_key_in}\"
-"""
+    api_key_path.write_text(
+        '"""Your Key for [The Blue Alliance\'s API](https://www.thebluealliance.com/apidocs)"""\n\n'
+        f'API_KEY = "{api_key}"\n',
+        encoding="utf-8",
     )
-    outfile.close()
-    exit()
+    return "" if api_key == "your_api_key_here" else api_key
+
+
+def _load_api_key():
+    """Load credentials, retaining interactive setup for legacy scripts."""
+    environment_key = os.environ.get("TBA_API_KEY")
+    if environment_key:
+        return environment_key
+
+    try:
+        from tba_analysis.api_key import API_KEY as configured_key
+    except ImportError:
+        if os.environ.get("TBA_NO_INTERACTIVE_API_KEY") == "1":
+            return ""
+        return _create_api_key_file()
+
+    if configured_key == "your_api_key_here":
+        if os.environ.get("TBA_NO_INTERACTIVE_API_KEY") == "1":
+            return ""
+        return _create_api_key_file()
+    return configured_key
+
+
+API_KEY = _load_api_key()
+headers = {"X-TBA-Auth-Key": API_KEY} if API_KEY else {}
 
 # Base URL for TBA API
 BASE_URL = "https://www.thebluealliance.com/api/v3"
 
-debug_mode = False
+# Verbosity levels: 0 = quiet (errors/warnings only), 1 = normal (key results, default), 2 = verbose (raw data/debug)
+VERBOSITY = 1
+
+
+def set_verbosity(level):
+    """
+    Sets the module-wide verbosity level used by `log_msg()` for terminal prints.
+    0 = quiet, 1 = normal (default), 2 = verbose/debug
+    """
+    global VERBOSITY
+    VERBOSITY = level
+
+
+def log_msg(message, level=1):
+    """
+    Prints an informational message only when the current VERBOSITY is >= `level`.
+    """
+    if VERBOSITY >= level:
+        info_msg(message)
+
+
+def _print_status(label, message, foreground):
+    print(f"[{foreground}{label}{Style.RESET_ALL}]: {message}")
+
+
+def info_msg(message):
+    """Print an informational message with a green status label."""
+    _print_status("INFO", message, Fore.GREEN)
+
+
+def warning_msg(message):
+    """Print a warning message with a yellow status label."""
+    _print_status("WARNING", message, Fore.YELLOW)
+
+
+def error_msg(message):
+    """Print an error message with a red status label."""
+    _print_status("ERROR", message, Fore.RED)
+
+
+def _cache_path(url):
+    cache_key = hashlib.sha256(url.encode("utf-8")).hexdigest()
+    return CACHE_DIR / f"{cache_key}.json"
+
+
+def _structured_event_cache_path(url):
+    event_prefix = f"{BASE_URL}/event/"
+    if not url.startswith(event_prefix):
+        return None
+
+    event_suffix = url[len(event_prefix):]
+    if not event_suffix:
+        return None
+
+    event_parts = event_suffix.split("/")
+    event_key = event_parts[0]
+    if not event_key:
+        return None
+
+    event_dir = CACHE_DIR / "events" / event_key
+    if len(event_parts) == 1:
+        return event_dir / "event.json"
+
+    endpoint_name = event_parts[1]
+    endpoint_map = {
+        "matches": "matches.json",
+        "teams": "teams.json",
+        "rankings": "rankings.json",
+        "awards": "awards.json",
+        "district_points": "district_points.json",
+        "alliances": "alliances.json",
+        "insights": "insights.json",
+    }
+
+    file_name = endpoint_map.get(endpoint_name)
+    if file_name is None:
+        file_name = f"{'_'.join(event_parts[1:])}.json"
+
+    return event_dir / file_name
+
+
+def _load_json_file(cache_file):
+    try:
+        with cache_file.open("r", encoding="utf-8") as cache_handle:
+            cached_payload = json.load(cache_handle)
+        if isinstance(cached_payload, dict) and "data" in cached_payload:
+            return cached_payload.get("data")
+        return cached_payload
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
+def _load_cached_json(url):
+    if url in _memory_cache:
+        return _memory_cache[url]
+
+    structured_cache_file = _structured_event_cache_path(url)
+    if structured_cache_file is not None and structured_cache_file.exists():
+        cached_data = _load_json_file(structured_cache_file)
+        if cached_data is not None:
+            _memory_cache[url] = cached_data
+            return cached_data
+
+    cache_file = _cache_path(url)
+    if not cache_file.exists():
+        return None
+
+    cached_data = _load_json_file(cache_file)
+    if cached_data is not None:
+        _memory_cache[url] = cached_data
+    return cached_data
+
+
+def _store_structured_event_cache(url, data):
+    structured_cache_file = _structured_event_cache_path(url)
+    if structured_cache_file is None:
+        return
+
+    structured_cache_file.parent.mkdir(parents=True, exist_ok=True)
+    with structured_cache_file.open("w", encoding="utf-8") as cache_handle:
+        json.dump(data, cache_handle, indent=2)
+
+
+def _store_cached_json(url, data, status_code=200):
+    CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    _memory_cache[url] = data
+
+    cache_payload = {
+        "url": url,
+        "cached_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "status_code": status_code,
+        "data": data,
+    }
+
+    cache_file = _cache_path(url)
+    with cache_file.open("w", encoding="utf-8") as cache_handle:
+        json.dump(cache_payload, cache_handle, indent=2)
+
+    _store_structured_event_cache(url, data)
+
+
+def fetch_tba_json(url, force_refresh=False):
+    """
+    Fetch JSON from TBA with a cache-first strategy.
+    """
+    cached_data = None if force_refresh else _load_cached_json(url)
+    if cached_data is not None:
+        return cached_data
+
+    while True:
+        try:
+            response = requests.get(url, headers=headers, timeout=10)
+            break
+        except requests.exceptions.ConnectionError as request_error:
+            # DNS/connection failures are usually transient (no internet, TBA down) so keep retrying
+            warning_msg(f"DNS failed, trying again in 5 seconds... ({request_error})")
+            time.sleep(5)
+        except requests.exceptions.RequestException as request_error:
+            # non-connection request errors (e.g. timeouts): fall back to cache if we have one
+            if cached_data is not None:
+                return cached_data
+            error_msg(f"Failed to reach TBA API for {url}: {request_error}")
+            raise RuntimeError(f"Unable to reach TBA API for {url}: {request_error}") from request_error
+
+    if response.status_code == 200:
+        data = response.json()
+        _store_cached_json(url, data, response.status_code)
+        return data
+
+    if cached_data is not None:
+        return cached_data
+
+    error_msg(f"Failed to fetch data: {response.status_code} - {response.reason}")
+    # raise instead of exit() so a single failed request doesn't kill a long-running server process
+    raise RuntimeError(f"Unable to fetch cached or live data for {url} (HTTP {response.status_code} - {response.reason})")
+
+
+def refresh_tba_json(url):
+    """
+    Force a fresh fetch for a TBA endpoint and update the cache.
+    """
+    return fetch_tba_json(url, force_refresh=True)
+
+
+def clear_tba_cache(include_exports=True):
+    """
+    Clear the local TBA cache and reset in-memory cached responses.
+    """
+    global _memory_cache
+    _memory_cache = {}
+
+    if not CACHE_DIR.exists():
+        return
+
+    if include_exports:
+        shutil.rmtree(CACHE_DIR)
+        return
+
+    for cache_item in CACHE_DIR.iterdir():
+        if cache_item.is_file():
+            cache_item.unlink()
+        elif cache_item.is_dir() and cache_item.name != "exports":
+            shutil.rmtree(cache_item)
 
 def clear():
     """
@@ -57,342 +276,9 @@ def clear():
     else:
         _ = os.system('clear')
 
-class color:
-    """
-    Class used to make it easier to print colors
-    """
-    GREY        = "\033[38;5;246m"
-    GREEN       = "\033[38;5;10m"
-    YELLOW      = "\033[38;5;220m"
-    RED         = "\033[38;5;196m"
-    WHITE       = "\033[38;5;255m"
-    RESET       = "\033[0;0m"
-    GREEN_BG    = "\033[48;5;10m\033[38;5;232m"  # bold black text on green background
-    YELLOW_BG   = "\033[48;5;220m\033[38;5;232m" # bold black text on yellow background
-    GREY_BG     = "\033[48;5;246m\033[38;5;232m" # bold black text on grey background
-    RED_BG      = "\033[48;5;196m\033[38;5;232m"   # bold white text on red background
-
-def validate_team(team_endpoint):
-    """
-    Sanity check to make sure the inputted team exists
-    """
-    response = requests.get(team_endpoint, headers=headers)
-
-    if response.status_code == 200:
-        team_data = response.json()
-        print(f"Team Name: {team_data['nickname']}")
-        print(f"Location: {team_data['city']}, {team_data['state_prov']}, {team_data['country']}")
-    else:
-        print(f"Failed to fetch data: {response.status_code} - {response.reason}")
-        print("Unable to validate team, exiting...")
-        exit()
-
-def get_team_district(team_num, year):
-    """
-    Return the district code for a team in a given year
-    """
-    url = f"{BASE_URL}/team/frc{team_num}/districts"
-
-    year = int(year)
-
-    response = requests.get(url, headers=headers)
-    districts = response.json()
-
-    for d in districts:
-        if year == d["year"]:
-            print(d)
-            return d["abbreviation"]
-
-    print(f"ERROR : Couldn't find district for {team_num} in year {year}")
-    return "no_district_found"
-
-def get_match_details(event_endpoint : str, match_type = "qm"):
-    matches_endpoint = f"{event_endpoint}/matches"
-    response = requests.get(matches_endpoint, headers=headers)
-
-    # contains a basic scoring breakdown for each match at the event
-    match_list = []
-
-    if response.status_code == 200:
-        matches = response.json()
-        for match in matches:
-            if(match['comp_level'] == match_type):
-                match_num = match['match_number']
-                red_teams = []
-                blue_teams = []
-                blue_score = match['score_breakdown'].get('blue',{}).get('totalPoints', 0)
-                red_score = match['score_breakdown'].get('red',{}).get('totalPoints', 0)
-
-                for team_id in match['alliances']['blue']['team_keys']:
-                    blue_teams.append(team_id.replace("frc", ""))
-
-                for team_id in match['alliances']['red']['team_keys']:
-                    red_teams.append(team_id.replace("frc", ""))
-
-                match_list.append([match_num, red_teams, red_score, blue_teams, blue_score])
-
-    match_list.sort(key=lambda x: x[0])
-    # print(match_list)
-    return match_list
-
-
-def get_team_name(team_num):
-    """
-    Returns the team's name
-
-    examples:
-
-    ```python
-    # prints "Beast from the East"
-    print(get_team_name(8858))
-    # prints "Robonauts"
-    print(get_team_name(118))
-    ```
-    """
-    url = f"{BASE_URL}/team/frc{team_num}"
-
-    response = requests.get(url, headers=headers)
-    team_data = response.json()
-
-    print(team_data['nickname'])
-    return team_data['nickname']
-
-def get_team_districtname(team_num, year):
-    """
-    Return the district code for a team in a given year
-    """
-    url = f"{BASE_URL}/team/frc{team_num}/districts"
-
-    year = int(year)
-
-    response = requests.get(url, headers=headers)
-    districts = response.json()
-
-    for d in districts:
-        if year == d["year"]:
-            print(d)
-            return d["display_name"]
-
-    print(f"ERROR : Couldn't find district for {team_num} in year {year}")
-    return "no_district_found"
-
-def get_event_id_list(team_events_endpoint, evnum):
-    """
-    get list of events a team participated in for a given year
-    """
-    event_ids = []
-
-    response = requests.get(team_events_endpoint, headers=headers)
-
-    if response.status_code == 200:
-        team_event_list = response.json()
-        i = 1
-        for event in team_event_list:
-            event_ids.append(event['key'])
-            if evnum == "prompt in script":
-                print(f"\nEVENT #{i}:")
-                get_event_details(event['key'])
-            i = i + 1
-    else:
-        print(f"Failed to fetch data: {response.status_code} - {response.reason}")
-        print("Unable to detect event list for this team/year combination, exiting...")
-        exit()
-
-    if evnum == "prompt in script":
-        evnum = input(f"\nSELECT WHICH EVENT OF THE ABOVE {i - 1} CHOICES YOU'D LIKE TO ANALYZE: ")
-
-    return event_ids, evnum
-
-def get_event_name(event_key):
-    event_endpoint = f"/event/{event_key}"
-    response = requests.get(BASE_URL + event_endpoint, headers=headers)
-    if response.status_code == 200:
-        event_data = response.json()
-        return event_data['name']
-
-def get_event_week(event_key):
-    event_endpoint = f"/event/{event_key}"
-    response = requests.get(BASE_URL + event_endpoint, headers=headers)
-    if response.status_code == 200:
-        event_data = response.json()
-        return event_data['week']
-
-def get_event_year(event_key):
-    event_endpoint = f"/event/{event_key}"
-    response = requests.get(BASE_URL + event_endpoint, headers=headers)
-    if response.status_code == 200:
-        event_data = response.json()
-        return event_data['year']
-
-def get_event_details(event_key):
-    """
-    fetch event details
-    """
-    event_endpoint = f"/event/{event_key}"
-    response = requests.get(BASE_URL + event_endpoint, headers=headers)
-    if response.status_code == 200:
-        event_data = response.json()
-        print(f"Event Name: {get_event_name(event_key)}")
-        print(f"Date: {event_data['start_date']} to {event_data['end_date']}")
-        print(f"Location: {event_data['city']}, {event_data['state_prov']}, {event_data['country']}\n")
-    else:
-        print(f"Failed to fetch event details: {response.status_code} - {response.reason}")
-        exit()
-
-# Function to fetch matches at the event
-def get_event_matches(event_endpoint, team_num):
-    """
-    print a complete list of matches
-    """
-    matches_endpoint = f"{event_endpoint}/matches"
-    response = requests.get(matches_endpoint, headers=headers)
-    team_key = f"frc{team_num}"
-    if response.status_code == 200:
-        matches = response.json()
-        if debug_mode:
-            print(matches_endpoint)
-            print("\nMatches at the Event:")
-        for match in matches:
-            if team_key in match['alliances']['blue']['team_keys'] or team_key in match['alliances']['red']['team_keys']:
-                print(f"{color.GREEN}\nMatch {match['match_number']}: {match['alliances']}{color.RESET}")
-            else:
-                print(f"\nMatch {match['match_number']}: {match['alliances']}")
-    else:
-        print(f"Failed to fetch matches: {response.status_code} - {response.reason}")
-        print(f"The event's matches list {matches_endpoint} could not be found, exiting...")
-        exit()
-
-def count_event_dp(team_num: str, event_key: str):
-    """
-    Fetches the district points earned at a given event for a given team
-    """
-    url = f"{BASE_URL}/event/{event_key}/district_points"
-    if debug_mode:
-        print(url)
-        get_event_details(event_key=event_key)
-
-    global dp_event_data
-
-    week = 0
-    team_points = 0
-    qual_points = 0
-    elim_points = 0
-    alliance_points = 0
-    award_points = 0
-
-    found_flag = False
-
-    for events in dp_event_data:
-        if events[0] == url:
-            found_flag = True
-            week = events[1]
-
-            try:
-                team_points = events[2]['points'][f'frc{team_num}']['total']
-                qual_points = events[2]['points'][f'frc{team_num}']['qual_points']
-                elim_points = events[2]['points'][f'frc{team_num}']['elim_points']
-                alliance_points = events[2]['points'][f'frc{team_num}']['alliance_points']
-                award_points = events[2]['points'][f'frc{team_num}']['award_points']
-                if team_points:
-                    print(f"District points for {team_num} @ {get_event_name(event_key)} (week {week}): {team_points}")
-                else:
-                    print(f"No district points found for team {team_num} at event {get_event_name(event_key)}")
-            except KeyError:
-                print(f"INFO : No District Point information for {team_num} @ {get_event_name(event_key)}")
-
-    # if this event hasn't already been saved to memory (via dp_event_data), save it here
-    if not found_flag:
-        response = requests.get(url, headers=headers)
-
-        try:
-            if response.status_code == 200:
-                data = response.json()
-                week = get_event_week(event_key)
-                team_points = data['points'][f'frc{team_num}']['total']
-                qual_points = data['points'][f'frc{team_num}']['qual_points']
-                elim_points = data['points'][f'frc{team_num}']['elim_points']
-                alliance_points = data['points'][f'frc{team_num}']['alliance_points']
-                award_points = data['points'][f'frc{team_num}']['award_points']
-                if team_points:
-                    print(f"District points for {team_num} @ {get_event_name(event_key)} (week {week}): {team_points}")
-                else:
-                    print(f"No district points found for team {team_num} at event {get_event_name(event_key)}")
-
-            else:
-                print(f"Failed to fetch data: {response.status_code} - {response.reason}")
-                print("Unable to detect event list for this team/year combination, exiting...")
-                exit()
-        except KeyError:
-            print(f"INFO : No District Point information for {team_num} @ {get_event_name(event_key)}")
-
-        # save this data in memory so it can be accessed quicker later!
-        dp_event_data.append([url, week, data])
-
-    return week, qual_points, elim_points, alliance_points, award_points, team_points
-
-def count_team_dp(team_num, team_events:str):
-    """
-    Calculates the # of district points for a given team
-    """
-    event_ids = []
-    district_pts_by_week = []
-    district_pts = 0
-
-    response = requests.get(team_events, headers=headers)
-
-    if response.status_code == 200:
-        data = response.json()
-
-        # sort list by chronological order
-        team_event_list = [
-            e for e in data
-        ]
-        team_event_list.sort(key=lambda e: datetime.datetime.fromisoformat(e['start_date']))
-
-        district_ev_cnt = 0
-        for event in team_event_list:
-            valid_event = True
-            if event['event_type'] == 1:
-                district_ev_cnt = district_ev_cnt + 1
-                if district_ev_cnt > 2:
-                    valid_event = False
-            elif event['event_type'] == 0:
-                valid_event = False
-
-            event_key = event['key']
-            week, qual_points, elim_points, alliance_points, award_points, team_points = count_event_dp(team_num, event_key)
-
-            # only first two district events cout towards qualification for District Championship
-            if valid_event:
-                district_pts = district_pts + award_points
-                district_pts = district_pts + qual_points
-                district_pts = district_pts + elim_points
-                district_pts = district_pts + alliance_points
-
-            if(week != None):
-                district_pts_by_week.append([week, district_pts])
-    else:
-        print(f"Failed to fetch data: {response.status_code} - {response.reason}")
-        print("Unable to detect event list for this team/year combination, exiting...")
-        exit()
-
-    return district_pts, district_pts_by_week
-
-def get_district_pts_by_week(district_key, year):
-    """
-    Fetches a full district's points by week
-    """
-    teamlist_url = f"{BASE_URL}/district/{year}{district_key}/teams"
-    response = requests.get(teamlist_url, headers=headers)
-    full_dist_pts_by_week = []
-
-    if response.status_code == 200:
-        teams = response.json()
-        for team in teams:
-            team_num = team['key'].replace("frc", "")
-            team_endpoint = f"{BASE_URL}/team/frc{team_num}"
-            team_events = f"{team_endpoint}/events/{year}"
-            district_pts, district_pts_by_week = count_team_dp(team_num, team_events)
-            full_dist_pts_by_week.append([team_num, district_pts, district_pts_by_week])
-
-    return full_dist_pts_by_week
+# team/event/match/season-specific functions live in team_func.py, event_func.py,
+# match_func.py, and season_func.py; re-exported below for backward compatibility.
+from tba_analysis.team_func import *
+from tba_analysis.event_func import *
+from tba_analysis.match_func import *
+from tba_analysis.season_func import *
